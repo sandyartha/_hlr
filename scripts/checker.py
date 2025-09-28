@@ -1,5 +1,6 @@
 import asyncio
 import pandas as pd
+import random
 from pathlib import Path
 from playwright.async_api import async_playwright
 
@@ -8,45 +9,54 @@ RAW_DIR = Path("raw")
 OUT_DIR = Path("raw_checker")
 OUT_DIR.mkdir(exist_ok=True)
 
+
 async def check_number(page, msisdn: str) -> dict:
-    """Cek 1 nomor di halaman HLR lookup"""
-    await page.goto(URL, wait_until="domcontentloaded", timeout=60000)
+    """Cek 1 nomor di halaman HLR lookup dengan retry"""
+    for attempt in range(3):  # coba sampai 3 kali
+        try:
+            await page.goto(URL, wait_until="networkidle", timeout=60000)
 
-    # tunggu input aktif
-    await page.wait_for_selector("#msisdn:not([disabled])", timeout=10000)
+            # beri jeda agar script JS selesai
+            await asyncio.sleep(2)
 
-    # isi nomor
-    await page.fill("#msisdn", msisdn)
+            # tunggu input aktif
+            await page.wait_for_selector("#msisdn:not([disabled])", timeout=20000)
 
-    # tunggu tombol aktif lalu klik
-    await page.wait_for_selector("#find:not([disabled])", timeout=5000)
-    await page.click("#find")
+            # isi nomor
+            await page.fill("#msisdn", msisdn)
 
-    # tunggu hasil
-    try:
-        await page.wait_for_function(
-            """() => {
-                const el = document.querySelector("pre.message");
-                if (!el) return false;
-                const txt = el.innerText;
-                return txt.includes("Operator") || txt.includes("ERROR");
-            }""",
-            timeout=15000
-        )
-        text = await page.inner_text("pre.message")
-    except Exception as e:
-        print(f"⚠️ Timeout untuk {msisdn}")
-        return {"provider": None, "hlr": None, "raw_text": ""}
+            # tunggu tombol aktif lalu klik
+            await page.wait_for_selector("#find:not([disabled])", timeout=10000)
+            await page.click("#find")
 
-    # parsing hasil
-    provider, hlr = None, None
-    for line in text.splitlines():
-        if "Operator" in line:
-            provider = line.split(":", 1)[1].strip()
-        elif "HLR" in line:
-            hlr = line.split(":", 1)[1].strip()
+            # tunggu hasil keluar
+            await page.wait_for_function(
+                """() => {
+                    const el = document.querySelector("pre.message");
+                    if (!el) return false;
+                    const txt = el.innerText;
+                    return txt.includes("Operator") || txt.includes("ERROR");
+                }""",
+                timeout=30000
+            )
+            text = await page.inner_text("pre.message")
 
-    return {"provider": provider, "hlr": hlr, "raw_text": text}
+            # parsing hasil
+            provider, hlr = None, None
+            for line in text.splitlines():
+                if "Operator" in line:
+                    provider = line.split(":", 1)[1].strip()
+                elif "HLR" in line:
+                    hlr = line.split(":", 1)[1].strip()
+
+            return {"provider": provider, "hlr": hlr, "raw_text": text}
+
+        except Exception as e:
+            print(f"⚠️ Gagal cek {msisdn} (attempt {attempt+1}): {e}")
+            await asyncio.sleep(5)
+
+    # kalau semua attempt gagal → return kosong
+    return {"provider": None, "hlr": None, "raw_text": ""}
 
 
 async def process_file(playwright, filepath: Path):
@@ -67,14 +77,18 @@ async def process_file(playwright, filepath: Path):
     browser = await playwright.chromium.launch(headless=True)
     page = await browser.new_page()
 
-    for _, row in df.iterrows():
+    for idx, row in df.iterrows():
         prefix = str(row["prefix"])
-        msisdn = "0" + prefix + "0000000"
+
+        # generate nomor acak biar lebih realistis
+        msisdn = "0" + prefix + "".join(str(random.randint(0, 9)) for _ in range(7))
+
+        print(f"🔄 Cek prefix {prefix} → {msisdn}")
 
         try:
             res = await check_number(page, msisdn)
         except Exception as e:
-            print(f"⚠️ Gagal cek {prefix}: {e}")
+            print(f"⚠️ Error fatal saat cek {prefix}: {e}")
             res = {"provider": None, "hlr": None, "raw_text": ""}
 
         results.append({
@@ -86,6 +100,11 @@ async def process_file(playwright, filepath: Path):
             "hlr_api": res["hlr"],
             "raw_text": res["raw_text"],
         })
+
+        # simpan partial setiap 10 baris biar tidak hilang kalau crash
+        if (idx + 1) % 10 == 0:
+            pd.DataFrame(results).to_csv(outpath, index=False)
+            print(f"💾 Progress disimpan sementara ({idx+1} rows)")
 
         await asyncio.sleep(2)  # delay biar ga ke-block
 
