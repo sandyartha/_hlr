@@ -86,7 +86,8 @@ async def process_file(playwright, filepath: str):
 
     browser = await playwright.chromium.launch(headless=True)
     page = await browser.new_page()
-    await page.goto(URL, timeout=60000)
+    await page.goto(URL, timeout=60000, wait_until="domcontentloaded")
+
 
     results = []
     for nomor in numbers:
