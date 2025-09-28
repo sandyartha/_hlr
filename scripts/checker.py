@@ -11,22 +11,20 @@ OUT_DIR.mkdir(exist_ok=True)
 
 
 async def check_number(page, msisdn: str) -> dict:
-    """Cek 1 nomor di halaman HLR lookup dengan retry"""
-    for attempt in range(3):  # coba sampai 3 kali
+    """Cek 1 nomor di halaman HLR lookup dengan bypass disabled"""
+    for attempt in range(3):
         try:
             await page.goto(URL, wait_until="networkidle", timeout=60000)
-
-            # beri jeda agar script JS selesai
             await asyncio.sleep(2)
 
-            # tunggu input aktif
-            await page.wait_for_selector("#msisdn:not([disabled])", timeout=20000)
+            # paksa enable input & tombol
+            await page.evaluate("""
+                document.querySelector('#msisdn')?.removeAttribute('disabled');
+                document.querySelector('#find')?.removeAttribute('disabled');
+            """)
 
-            # isi nomor
+            # isi nomor & klik
             await page.fill("#msisdn", msisdn)
-
-            # tunggu tombol aktif lalu klik
-            await page.wait_for_selector("#find:not([disabled])", timeout=10000)
             await page.click("#find")
 
             # tunggu hasil keluar
@@ -55,8 +53,9 @@ async def check_number(page, msisdn: str) -> dict:
             print(f"⚠️ Gagal cek {msisdn} (attempt {attempt+1}): {e}")
             await asyncio.sleep(5)
 
-    # kalau semua attempt gagal → return kosong
+    # kalau gagal 3x
     return {"provider": None, "hlr": None, "raw_text": ""}
+
 
 
 async def process_file(playwright, filepath: Path):
