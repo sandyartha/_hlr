@@ -27,6 +27,7 @@ jobs:
           python -m playwright install --with-deps chromium
 
       - name: Run checker
+        timeout-minutes: 30
         run: |
           python scripts/checker.py
 
