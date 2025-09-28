@@ -1,0 +1,36 @@
+name: HLR Checker
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"   # setiap 5 menit
+  workflow_dispatch:
+
+jobs:
+  hlr-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          playwright install chromium
+
+      - name: Run checker
+        run: python scripts/checker.py
+
+      - name: Commit results
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "actions@github.com"
+          git add raw_checker/*.csv || true
+          git commit -m "Update HLR check results" || echo "No changes"
+          git push
