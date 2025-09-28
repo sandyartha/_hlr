@@ -7,6 +7,9 @@ from playwright.async_api import async_playwright
 URL = "https://ceebydith.com/cek-hlr-lokasi-hp.html"
 RAW_DIR = Path("raw")
 OUT_DIR = Path("raw_checker")
+
+# Ensure directories exist
+RAW_DIR.mkdir(exist_ok=True)
 OUT_DIR.mkdir(exist_ok=True)
 
 
@@ -122,3 +125,5 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+# ggggg
