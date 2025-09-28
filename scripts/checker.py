@@ -1,93 +1,93 @@
+import asyncio
+import os
 import pandas as pd
-from pathlib import Path
-from playwright.sync_api import sync_playwright
-import time
+from playwright.async_api import async_playwright
 
-RAW_DIR = Path("raw")
-OUT_DIR = Path("raw_checker")
-OUT_DIR.mkdir(exist_ok=True)
+RAW_DIR = "raw"
+OUT_DIR = "raw_checker"
+URL = "https://contoh-hlr-lookup.com"  # ganti dengan URL asli
 
-def process_file(csv_file, page):
-    print(f"▶️ Processing {csv_file.name}")
-    df = pd.read_csv(csv_file)
+async def check_number(page, nomor: str) -> str | None:
+    """Cek nomor HLR pada website target."""
+    try:
+        # Aktifkan input & button dulu
+        await page.evaluate("""
+            document.getElementById('msisdn')?.removeAttribute('disabled');
+            document.getElementById('find')?.removeAttribute('disabled');
+        """)
+
+        # Clear dulu input biar tidak menumpuk
+        await page.fill('#msisdn', '')
+        # Isi nomor
+        await page.fill('#msisdn', nomor)
+
+        # Klik cari
+        await page.click('#find')
+
+        # Tunggu hasil (selector bisa disesuaikan)
+        await page.wait_for_selector('.hasil, #result, table', timeout=7000)
+
+        hasil = await page.inner_text('.hasil, #result, table')
+        return hasil.strip()
+    except Exception as e:
+        print(f"⚠️ Gagal memproses {nomor}: {e}")
+        return None
+
+
+async def process_file(playwright, filepath: str):
+    """Proses satu file CSV berisi daftar nomor"""
+    filename = os.path.basename(filepath)
+    outpath = os.path.join(OUT_DIR, filename)
+
+    # Jika sudah ada hasilnya, skip
+    if os.path.exists(outpath):
+        print(f"⏭️  Skip {filename}, sudah ada hasil.")
+        return
+
+    print(f"🔎 Processing {filename}")
+
+    # Load data CSV
+    try:
+        df = pd.read_csv(filepath, dtype=str)
+    except Exception as e:
+        print(f"⚠️ Gagal baca {filename}: {e}")
+        return
+
+    # Pastikan ada kolom 'msisdn'
+    if "msisdn" not in df.columns:
+        print(f"⚠️ File {filename} tidak ada kolom 'msisdn'")
+        return
+
+    browser = await playwright.chromium.launch(headless=True)
+    page = await browser.new_page()
+    await page.goto(URL, timeout=60000)
+
     results = []
-
-    for _, row in df.iterrows():
-        prefix = str(row["prefix"])
-        msisdn = "0" + prefix + "0000000"
-
-        page.goto("https://ceebydith.com/cek-hlr-lokasi-hp.html")
-
-        # Tutup alert kalau ada
-        try:
-            page.click(".alert .close", timeout=3000)
-        except:
-            pass
-
-        # Pastikan input aktif
-        try:
-            page.wait_for_selector("#msisdn", timeout=10000)
-            page.locator("#msisdn").evaluate("el => el.removeAttribute('disabled')")
-            page.fill("#msisdn", msisdn)
-            page.click("#find")
-        except Exception:
-            print(f"⚠️ Gagal menemukan input #msisdn untuk {msisdn}")
+    for nomor in df["msisdn"].dropna():
+        nomor = nomor.strip()
+        if not nomor:
             continue
+        hasil = await check_number(page, nomor)
+        results.append({"msisdn": nomor, "result": hasil})
 
-        try:
-            page.wait_for_function(
-                """() => {
-                    const el = document.querySelector("pre.message");
-                    if (!el) return false;
-                    const txt = el.innerText;
-                    return txt.includes("Operator") || txt.includes("ERROR");
-                }""", timeout=10000
-            )
-            text = page.inner_text("pre.message")
-        except Exception:
-            print(f"⚠️ Tidak ada hasil untuk {msisdn}")
-            continue
+    await browser.close()
 
-        provider, hlr = None, None
-        for line in text.splitlines():
-            if "Operator" in line:
-                provider = line.split(":", 1)[1].strip()
-            elif "HLR" in line:
-                hlr = line.split(":", 1)[1].strip()
+    # Simpan hasil
+    out_df = pd.DataFrame(results)
+    os.makedirs(OUT_DIR, exist_ok=True)
+    out_df.to_csv(outpath, index=False)
+    print(f"✅ Hasil disimpan: {outpath}")
 
-        results.append({
-            "prefix": prefix,
-            "city_csv": row.get("city"),
-            "sim_csv": row.get("sim_card"),
-            "provider_csv": row.get("provider"),
-            "provider_api": provider,
-            "hlr_api": hlr,
-            "raw_text": text
-        })
 
-        time.sleep(2)
+async def main():
+    os.makedirs(OUT_DIR, exist_ok=True)
 
-    if results:
-        out = pd.DataFrame(results)
-        out_file = OUT_DIR / csv_file.name
-        out.to_csv(out_file, index=False)
-        print(f"✅ Saved: {out_file}")
-    else:
-        print(f"⚠️ No results for {csv_file.name}")
+    async with async_playwright() as p:
+        for file in os.listdir(RAW_DIR):
+            if file.endswith(".csv"):
+                filepath = os.path.join(RAW_DIR, file)
+                await process_file(p, filepath)
 
-def main():
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
-
-        for csv_file in RAW_DIR.glob("*.csv"):
-            out_file = OUT_DIR / csv_file.name
-            if out_file.exists():
-                print(f"⏭️ Skip {csv_file.name}, already checked")
-                continue
-            process_file(csv_file, page)
-
-        browser.close()
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
