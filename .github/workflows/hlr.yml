@@ -2,7 +2,7 @@ name: HLR Checker
 
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: "*/30 * * * *"
   workflow_dispatch:
 
 permissions:
@@ -24,10 +24,12 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-          playwright install --with-deps chromium
+          python -m playwright install --with-deps chromium
 
       - name: Run checker
-        run: python scripts/checker.py
+        run: |
+          mkdir -p raw_checker
+          python scripts/checker.py
 
       - name: Commit results
         run: |
@@ -36,3 +38,10 @@ jobs:
           git add raw_checker/*.csv || echo "No files"
           git commit -m "Update HLR results" || echo "No changes"
           git push
+
+      - name: Upload debug screenshots (optional)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-screenshots
+          path: "*.png"
