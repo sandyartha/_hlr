@@ -28,7 +28,6 @@ jobs:
 
       - name: Run checker
         run: |
-          mkdir -p raw_checker
           python scripts/checker.py
 
       - name: Commit results
