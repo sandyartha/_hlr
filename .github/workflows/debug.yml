@@ -80,13 +80,6 @@ jobs:
           print('✅ Playwright verification successful')
           "
 
-      - name: Setup Proxy
-        run: |
-          echo "PROXY_SERVER=socks5://localhost:9050" >> .env
-          sudo apt-get update && sudo apt-get install -y tor
-          sudo service tor start
-          sleep 5
-
       - name: Create debug configuration
         run: |
           echo "DEBUG=true" >> .env
@@ -119,39 +112,52 @@ jobs:
                   try:
                       log_debug(f"⏳ Mencoba membuka halaman (attempt {attempt + 1}/{MAX_RETRIES})...")
                       
-                      # Use domcontentloaded instead of networkidle
+                      # Use networkidle to ensure all resources are loaded
                       await page.goto(URL, 
-                                    wait_until="domcontentloaded",
-                                    timeout=30000)
+                                    wait_until="networkidle",
+                                    timeout=60000)
                       
-                      # Wait for body to be available
-                      await page.wait_for_selector("body", timeout=10000)
-                      log_debug("✅ Halaman berhasil dibuka")
-                      
-                      # Tunggu sampai JavaScript selesai dimuat
-                      log_debug("⏳ Menunggu semua resource...")
+                      log_debug("⏳ Menunggu halaman siap...")
+                      # Wait for specific elements that indicate page is ready
                       await page.wait_for_load_state("domcontentloaded")
                       await page.wait_for_load_state("load")
-                      log_debug("✅ Semua resource berhasil dimuat")
+                      await page.wait_for_load_state("networkidle")
+                      
+                      # Additional wait to ensure JavaScript execution
+                      await page.wait_for_timeout(2000)
+                      
+                      log_debug("✅ Halaman berhasil dimuat")
                       
                       # Screenshot halaman awal
-                      await page.screenshot(path="debug_initial.png")
+                      await page.screenshot(path=f"debug_initial_{attempt + 1}.png")
                       log_debug("📸 Screenshot awal disimpan")
 
-                      # Debug page content
+                      # Debug page content and save
                       page_content = await page.content()
                       log_debug(f"📄 Page HTML length: {len(page_content)} bytes")
+                      with open(f"debug_html_{attempt + 1}.txt", "w", encoding="utf-8") as f:
+                          f.write(page_content)
                       
-                      # Cek apakah element ada di page
-                      log_debug("🔍 Mencari input field...")
-                      input_exists = await page.evaluate("""() => {
-                          const el = document.querySelector("#msisdn");
-                          return el ? true : false;
-                      }""")
-                      log_debug(f"Input field exists: {input_exists}")
+                      # Coba berbagai selector untuk input field
+                      selectors = ["#msisdn", "[name='msisdn']", "input[type='text']"]
+                      input_found = False
                       
-                      if not input_exists:
-                          raise Exception("Input field #msisdn tidak ditemukan di halaman")
+                      for selector in selectors:
+                          log_debug(f"🔍 Mencari input field dengan selector: {selector}")
+                          try:
+                              # Wait for element with timeout
+                              element = await page.wait_for_selector(selector, 
+                                                                   state="visible",
+                                                                   timeout=5000)
+                              if element:
+                                  input_found = True
+                                  log_debug(f"✅ Input field ditemukan dengan selector: {selector}")
+                                  break
+                          except:
+                              continue
+                      
+                      if not input_found:
+                          raise Exception("Input field tidak ditemukan dengan semua selector yang dicoba")
                       
                       # tunggu input aktif dengan timeout lebih lama
                       log_debug("⏳ Menunggu input field menjadi aktif...")
@@ -240,10 +246,8 @@ jobs:
               try:
                   async with async_playwright() as p:
                       # Configure browser with necessary flags for CI environment
-                      proxy_server = os.getenv("PROXY_SERVER")
                       browser = await p.chromium.launch(
                           headless=headless,
-                          proxy={"server": proxy_server} if proxy_server else None,
                           args=[
                               '--no-sandbox',
                               '--disable-setuid-sandbox',
