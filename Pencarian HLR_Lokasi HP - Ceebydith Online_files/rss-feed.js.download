@@ -1,0 +1,20 @@
+$(document).ready(function() {
+	function loadFeed(rss, url, caption) {
+		$('.feed').rss(rss, {
+			limit: 10,
+			ssl: /^https/.test(rss),
+			layoutTemplate: '<span> <a href="' + url + '" target="_blank"><b>' + caption + '</b></a> &#8226;{entries}</span>',
+			entryTemplate:'<span> <a href="{url}" title="{shortBodyPlain}" target="_blank">{title}</a> &#8226;</span>'
+		});
+	}
+	$('.marque').hide().SetScroller({	velocity: 70 });
+	loadFeed('https://www.littleman.web.id/modules/feeder/rss.php', 'https://www.littleman.web.id/', 'Littleman Cloth');
+	loadFeed('https://beritasumbar.com/feed', 'http://beritasumbar.com/', 'Berita Sumbar');
+	//loadFeed('http://www.antarasumbar.com/rss/sumbar.xml', 'http://www.antarasumbar.com/', 'Antara Sumbar');
+	loadFeed('https://rss.tempo.co/index.php/teco/news/feed/start/0/limit/20', 'http://www.tempo.co/', 'Tempo');
+	loadFeed('https://rss.viva.co.id/get/all', 'http://www.viva.co.id/', 'VIVAnews');
+	loadFeed('https://rss.detik.com/', 'http://www.detik.com/', 'detikcom');
+	$('.feed').show();
+	$('.marque').show();
+});
+

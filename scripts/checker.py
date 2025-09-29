@@ -18,16 +18,21 @@ async def check_number(page, msisdn: str) -> dict:
     """Cek 1 nomor di halaman HLR lookup dengan bypass disabled"""
     for attempt in range(2):
         try:
-            # Ubah wait_until menjadi 'domcontentloaded' dan kurangi timeout
-            await page.goto(URL, wait_until="domcontentloaded", timeout=15000)
+            # Block resources yang tidak diperlukan
+            await page.route("**/*.{png,jpg,jpeg,gif,css,woff,woff2}", lambda route: route.abort())
+            await page.route("**/{analytics,facebook,google}*", lambda route: route.abort())
+            await page.route("**/ads*", lambda route: route.abort())
+            
+            # Set timeout yang lebih pendek dan hanya tunggu sampai HTML loaded
+            await page.goto(URL, wait_until="load", timeout=10000)
             
             try:
                 # Tunggu form input muncul
-                await page.wait_for_selector('#msisdn', timeout=5000)
-            except:
-                # Jika timeout, coba reload page
-                await page.reload(wait_until="domcontentloaded")
-                await page.wait_for_selector('#msisdn', timeout=5000)
+                await page.wait_for_selector('#msisdn', state="visible", timeout=5000)
+            except Exception as e:
+                print(f"⚠️ Form tidak muncul, mencoba reload...")
+                await page.reload(wait_until="load")
+                await page.wait_for_selector('#msisdn', state="visible", timeout=5000)
 
             # paksa enable input & tombol
             await page.evaluate("""
@@ -95,12 +100,18 @@ async def process_file(playwright, filepath: Path):
         args=[
             '--disable-dev-shm-usage',
             '--no-sandbox',
-            '--disable-setuid-sandbox'
+            '--disable-setuid-sandbox',
+            '--disable-javascript',  # Disable JavaScript
+            '--disable-gpu',         # Disable GPU hardware acceleration
+            '--disable-notifications',
+            '--disable-extensions'
         ]
     )
     context = await browser.new_context(
-        viewport={'width': 1280, 'height': 720},
-        user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36'
+        viewport={'width': 800, 'height': 600},  # Smaller viewport
+        user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        java_script_enabled=False,  # Disable JavaScript
+        bypass_csp=True,  # Bypass Content Security Policy
     )
     page = await context.new_page()
 

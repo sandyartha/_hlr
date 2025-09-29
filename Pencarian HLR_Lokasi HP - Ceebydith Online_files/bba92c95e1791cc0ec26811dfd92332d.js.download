@@ -1,0 +1,54 @@
+$(document).ready(function(){
+	$('#find').click(function() {
+		var msisdn = $('#msisdn').val();
+		if (/0[2-9][0-9]{7,10}/.test(msisdn)) {
+			var command = '$ hlrlookup ' + msisdn + '\n\n';
+			$('#find').attr('disabled', 'disabled');
+			$('#msisdn').attr('disabled', 'disabled');
+			$('#message .message').html(command + 'Sedang mencari lokasi...');
+			$('#message .retry').hide();
+			$('#message').show();
+			$('#map').hide();
+			$('#map .map').empty();
+			//$('html, body').animate({
+			//	scrollTop: $('#message').offset().top - $('header.main-header').outerHeight()
+			//}, 1000);
+			$.ajax({
+				type: 'POST',
+				url: 'https://ceebydith.com/cek-hlr-lokasi-hp.html',
+				data: { msisdn: msisdn },
+				success: function(data) {
+					if (!data) {
+						$('#message .message').html(command + 'ERROR: Communication failed');
+					} else if ('provider' in data && 'hlr' in data) {
+						$('#message .message').html(command + 'Operator: ' + data['provider'] +'\nHLR     : ' + data['hlr']);
+						$('#map').show();
+						$('#map .map').gMap({
+							address: data['hlr'],
+							zoom: 8,
+							markers:[{
+								address: data['hlr'],
+								html: 'Lokasi HLR ' + msisdn + '<br/>' + data['hlr'],
+								popup: true
+							}]
+						});
+					} else if ('error' in data) {
+						$('#message .message').html(command + 'ERROR: ' + data['error']);
+					} else {
+						$('#message .message').html(command + 'ERROR: Communication failed');
+					}
+				},
+				error: function(jqXHR, textStatus) {
+					$('#message .message').html(command + 'ERROR: ' + textStatus);
+				},
+				complete: function() {
+					$('#message .retry').show();
+				}
+			});
+		} else {
+			alert('Nomor yang Anda masukan tidak valid\nNomor terdiri 9 sampai 10 angka dan diawali dengan 0\nMisal: 08681234567');
+		}
+	});
+	$('#find').removeAttr('disabled');
+	$('#msisdn').attr('placeholder', 'Misal: 08681234567').removeAttr('disabled');
+});

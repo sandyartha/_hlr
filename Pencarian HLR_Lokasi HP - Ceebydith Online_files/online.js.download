@@ -1,0 +1,14 @@
+$(document).ready(function() {
+	$.ajax({
+		type: 'POST',
+		url: 'https://ceebydith.com/online.html',
+		success: function(data) {
+			if (data && 'id' in data) {
+				$('#mystatus').attr('href', 'ymsgr:SendIM?' + data['id']);
+				$('#mystatus').attr('title', 'I\'m online on Yahoo! Messenger');
+				$('#mystatus i').removeClass('text-muted').addClass('text-success');
+				$('#mystatus span').html('Online&nbsp;&nbsp;&nbsp;<i class="fa fa-weixin"></i>');
+			}
+		}
+	});
+});
