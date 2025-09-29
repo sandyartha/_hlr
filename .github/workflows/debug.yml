@@ -106,42 +106,52 @@ jobs:
                       # Wait for body to be available
                       await page.wait_for_selector("body", timeout=10000)
                       log_debug("✅ Halaman berhasil dibuka")
-                  
-                  # Tunggu sampai JavaScript selesai dimuat
-                  log_debug("⏳ Menunggu semua resource...")
-                  await page.wait_for_load_state("domcontentloaded")
-                  await page.wait_for_load_state("load")
-                  log_debug("✅ Semua resource berhasil dimuat")
-                  
-                  # Screenshot halaman awal
-                  await page.screenshot(path="debug_initial.png")
-                  log_debug("📸 Screenshot awal disimpan")
+                      
+                      # Tunggu sampai JavaScript selesai dimuat
+                      log_debug("⏳ Menunggu semua resource...")
+                      await page.wait_for_load_state("domcontentloaded")
+                      await page.wait_for_load_state("load")
+                      log_debug("✅ Semua resource berhasil dimuat")
+                      
+                      # Screenshot halaman awal
+                      await page.screenshot(path="debug_initial.png")
+                      log_debug("📸 Screenshot awal disimpan")
 
-                  # Debug page content
-                  page_content = await page.content()
-                  log_debug(f"📄 Page HTML length: {len(page_content)} bytes")
-                  
-                  # Cek apakah element ada di page
-                  log_debug("🔍 Mencari input field...")
-                  input_exists = await page.evaluate("""() => {
-                      const el = document.querySelector("#msisdn");
-                      return el ? true : false;
-                  }""")
-                  log_debug(f"Input field exists: {input_exists}")
-                  
-                  if not input_exists:
-                      raise Exception("Input field #msisdn tidak ditemukan di halaman")
-                  
-                  # tunggu input aktif dengan timeout lebih lama
-                  log_debug("⏳ Menunggu input field menjadi aktif...")
-                  await page.wait_for_selector("#msisdn:not([disabled])", 
-                                             timeout=30000, 
-                                             state="visible")
-                  log_debug("✅ Input field sudah aktif dan visible")
-              except Exception as e:
-                  log_debug(f"❌ Error saat loading halaman: {str(e)}")
-                  await page.screenshot(path="debug_error_load.png")
-                  raise e
+                      # Debug page content
+                      page_content = await page.content()
+                      log_debug(f"📄 Page HTML length: {len(page_content)} bytes")
+                      
+                      # Cek apakah element ada di page
+                      log_debug("🔍 Mencari input field...")
+                      input_exists = await page.evaluate("""() => {
+                          const el = document.querySelector("#msisdn");
+                          return el ? true : false;
+                      }""")
+                      log_debug(f"Input field exists: {input_exists}")
+                      
+                      if not input_exists:
+                          raise Exception("Input field #msisdn tidak ditemukan di halaman")
+                      
+                      # tunggu input aktif dengan timeout lebih lama
+                      log_debug("⏳ Menunggu input field menjadi aktif...")
+                      await page.wait_for_selector("#msisdn:not([disabled])", 
+                                                 timeout=30000, 
+                                                 state="visible")
+                      log_debug("✅ Input field sudah aktif dan visible")
+                      
+                      # Jika berhasil, keluar dari loop
+                      break
+                      
+                  except Exception as e:
+                      log_debug(f"❌ Error pada attempt {attempt + 1}: {str(e)}")
+                      await page.screenshot(path=f"debug_error_load_{attempt + 1}.png")
+                      
+                      if attempt == MAX_RETRIES - 1:  # Jika ini attempt terakhir
+                          log_debug("❌ Semua attempt gagal")
+                          raise e
+                      
+                      # Tunggu sebentar sebelum mencoba lagi
+                      await asyncio.sleep(5)
 
               # isi nomor
               log_debug(f"📝 Mengisi nomor: {msisdn}")
