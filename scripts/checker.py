@@ -16,10 +16,18 @@ OUT_DIR.mkdir(exist_ok=True)
 
 async def check_number(page, msisdn: str) -> dict:
     """Cek 1 nomor di halaman HLR lookup dengan bypass disabled"""
-    for attempt in range(2):  # kurangi retry ke 2 kali
+    for attempt in range(2):
         try:
-            await page.goto(URL, wait_until="networkidle", timeout=30000)  # kurangi timeout
-            await asyncio.sleep(1)  # kurangi delay
+            # Ubah wait_until menjadi 'domcontentloaded' dan kurangi timeout
+            await page.goto(URL, wait_until="domcontentloaded", timeout=15000)
+            
+            try:
+                # Tunggu form input muncul
+                await page.wait_for_selector('#msisdn', timeout=5000)
+            except:
+                # Jika timeout, coba reload page
+                await page.reload(wait_until="domcontentloaded")
+                await page.wait_for_selector('#msisdn', timeout=5000)
 
             # paksa enable input & tombol
             await page.evaluate("""
@@ -31,17 +39,21 @@ async def check_number(page, msisdn: str) -> dict:
             await page.fill("#msisdn", msisdn)
             await page.click("#find")
 
-            # tunggu hasil keluar dengan timeout yang lebih pendek
-            await page.wait_for_function(
-                """() => {
-                    const el = document.querySelector("pre.message");
-                    if (!el) return false;
-                    const txt = el.innerText;
-                    return txt.includes("Operator") || txt.includes("ERROR");
-                }""",
-                timeout=15000
-            )
-            text = await page.inner_text("pre.message")
+            try:
+                # Tunggu hasil dengan timeout yang lebih pendek
+                await page.wait_for_selector("pre.message", timeout=10000)
+                text = await page.inner_text("pre.message")
+                
+                # Jika tidak ada hasil dalam waktu 2 detik, anggap error
+                if not text.strip():
+                    await asyncio.sleep(2)
+                    text = await page.inner_text("pre.message")
+                    if not text.strip():
+                        raise Exception("No response data")
+                        
+            except Exception as e:
+                print(f"⚠️ Timeout menunggu hasil untuk {msisdn}")
+                raise e
 
             # parsing hasil
             provider, hlr = None, None
@@ -78,8 +90,19 @@ async def process_file(playwright, filepath: Path):
         return
 
     results = []
-    browser = await playwright.chromium.launch(headless=True)
-    page = await browser.new_page()
+    browser = await playwright.chromium.launch(
+        headless=True,
+        args=[
+            '--disable-dev-shm-usage',
+            '--no-sandbox',
+            '--disable-setuid-sandbox'
+        ]
+    )
+    context = await browser.new_context(
+        viewport={'width': 1280, 'height': 720},
+        user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36'
+    )
+    page = await context.new_page()
 
     for idx, row in df.iterrows():
         prefix = str(row["prefix"])
