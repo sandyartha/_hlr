@@ -98,11 +98,12 @@ jobs:
                   async with async_playwright() as p:
                       # Launch browser dengan konfigurasi anti-detection
                       browser = await p.chromium.launch(
-                          headless=True,
+                          headless=False,  # Non-headless mode
                           args=[
                               '--disable-blink-features=AutomationControlled',
                               '--disable-features=IsolateOrigins,site-per-process',
-                              '--disable-site-isolation-trials'
+                              '--disable-site-isolation-trials',
+                              '--start-maximized'  # Maximize window in non-headless mode
                           ]
                       )
                       
@@ -133,15 +134,30 @@ jobs:
                       })
                       
                       print("Membuka halaman...")
-                      # Navigate dengan timeout lebih lama untuk challenge
-                      await page.goto("https://ceebydith.com/cek-hlr-lokasi-hp.html", 
-                                    wait_until="networkidle",
-                                    timeout=60000)
+                      try:
+                          # Navigate dengan timeout normal karena non-headless
+                          print("Mencoba mengakses halaman...")
+                          await page.goto("https://ceebydith.com/cek-hlr-lokasi-hp.html", 
+                                        wait_until="domcontentloaded",
+                                        timeout=60000)
+                      except Exception as e:
+                          print(f"Initial navigation error: {str(e)}")
+                          print("Mencoba recovery mode...")
+                          # Try alternative approach
+                          await page.goto("https://ceebydith.com/cek-hlr-lokasi-hp.html", 
+                                        wait_until="commit",
+                                        timeout=30000)
                       
                       # Tunggu sampai challenge selesai
                       print("Menunggu halaman selesai loading...")
-                      await page.wait_for_load_state("networkidle")
-                      await page.wait_for_timeout(5000)  # Tunggu 5 detik
+                      try:
+                          print("Menunggu networkidle state...")
+                          await page.wait_for_load_state("networkidle", timeout=30000)
+                      except Exception as e:
+                          print(f"Network idle timeout: {str(e)}")
+                          
+                      print("Menunggu tambahan 10 detik...")
+                      await page.wait_for_timeout(10000)  # Increased wait time
                       
                       # Get page title
                       title = await page.title()
