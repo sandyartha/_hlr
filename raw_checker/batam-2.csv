@@ -1,0 +1,17 @@
+prefix,city_csv,sim_csv,provider_csv,provider_api,hlr_api,raw_text
+81391,Batam,HALO / SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Purwokerto, Indonesia","$ hlrlookup 0813910000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Purwokerto, Indonesia"
+82171,Batam,SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Padang, Indonesia","$ hlrlookup 0821710000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Padang, Indonesia"
+85264,Batam,AS,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Batam, Indonesia","$ hlrlookup 0852640000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Batam, Indonesia"
+85364,Batam,AS,TELKOMSEL,Telekomunikasi Selular (KARTU HALO/SIMPATI/KARTU AS),"Batam, Indonesia","$ hlrlookup 0853640000000
+
+Operator: Telekomunikasi Selular (KARTU HALO/SIMPATI/KARTU AS)
+HLR     : Batam, Indonesia"

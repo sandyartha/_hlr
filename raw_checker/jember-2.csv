@@ -1,0 +1,29 @@
+prefix,city_csv,sim_csv,provider_csv,provider_api,hlr_api,raw_text
+81336,Jember,HALO / SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Jember, Indonesia","$ hlrlookup 0813360000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Jember, Indonesia"
+813545,Jember,HALO / SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Palu, Indonesia","$ hlrlookup 08135450000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Palu, Indonesia"
+813546,Jember,HALO / SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Makasar, Indonesia","$ hlrlookup 08135460000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Makasar, Indonesia"
+813547,Jember,HALO / SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Makasar, Indonesia","$ hlrlookup 08135470000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Makasar, Indonesia"
+813548,Jember,HALO / SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Makasar, Indonesia","$ hlrlookup 08135480000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Makasar, Indonesia"
+813549,Jember,HALO / SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Makasar, Indonesia","$ hlrlookup 08135490000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Makasar, Indonesia"
+82331,Jember,SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Surabaya, Indonesia","$ hlrlookup 0823310000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Surabaya, Indonesia"

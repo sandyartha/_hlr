@@ -1,0 +1,29 @@
+prefix,city_csv,sim_csv,provider_csv,provider_api,hlr_api,raw_text
+81147,Ambon,HALO,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Ambon, Indonesia","$ hlrlookup 0811470000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Ambon, Indonesia"
+813430,Ambon,HALO / SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Ambon, Indonesia","$ hlrlookup 08134300000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Ambon, Indonesia"
+813431,Ambon,HALO / SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Ambon, Indonesia","$ hlrlookup 08134310000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Ambon, Indonesia"
+813432,Ambon,HALO / SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Ambon, Indonesia","$ hlrlookup 08134320000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Ambon, Indonesia"
+813567,Ambon,HALO / SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Manado, Indonesia","$ hlrlookup 08135670000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Manado, Indonesia"
+813568,Ambon,HALO / SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Manado, Indonesia","$ hlrlookup 08135680000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Manado, Indonesia"
+813569,Ambon,HALO / SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Manado, Indonesia","$ hlrlookup 08135690000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Manado, Indonesia"

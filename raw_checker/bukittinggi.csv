@@ -1,0 +1,9 @@
+prefix,city_csv,sim_csv,provider_csv,provider_api,hlr_api,raw_text
+8116020,Bukittinggi,HALO,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Medan, Indonesia","$ hlrlookup 081160200000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Medan, Indonesia"
+8116029,Bukittinggi,HALO,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Medan, Indonesia","$ hlrlookup 081160290000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Medan, Indonesia"

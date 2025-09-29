@@ -1,0 +1,29 @@
+prefix,city_csv,sim_csv,provider_csv,provider_api,hlr_api,raw_text
+812248,Bandung,HALO / SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Bandung, Indonesia","$ hlrlookup 08122480000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Bandung, Indonesia"
+812249,Bandung,HALO / SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Bandung, Indonesia","$ hlrlookup 08122490000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Bandung, Indonesia"
+81320,Bandung,HALO / SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Bandung, Indonesia","$ hlrlookup 0813200000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Bandung, Indonesia"
+81321,Bandung,HALO / SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Bandung, Indonesia","$ hlrlookup 0813210000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Bandung, Indonesia"
+81322,Bandung,HALO / SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Bandung, Indonesia","$ hlrlookup 0813220000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Bandung, Indonesia"
+81392,Bandung,HALO / SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Yogyakarta, Indonesia","$ hlrlookup 0813920000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Yogyakarta, Indonesia"
+81395,Bandung,HALO / SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Bandung, Indonesia","$ hlrlookup 0813950000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Bandung, Indonesia"

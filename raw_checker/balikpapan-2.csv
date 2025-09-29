@@ -1,0 +1,25 @@
+prefix,city_csv,sim_csv,provider_csv,provider_api,hlr_api,raw_text
+8215,Balikpapan,SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Pontianak, Indonesia","$ hlrlookup 082150000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Pontianak, Indonesia"
+82150,Balikpapan,SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Pontianak, Indonesia","$ hlrlookup 0821500000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Pontianak, Indonesia"
+82157,Balikpapan,SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Balikpapan, Indonesia","$ hlrlookup 0821570000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Balikpapan, Indonesia"
+85246,Balikpapan,AS,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Balikpapan, Indonesia","$ hlrlookup 0852460000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Balikpapan, Indonesia"
+85251,Balikpapan,AS,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Banjarmasin, Indonesia","$ hlrlookup 0852510000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Banjarmasin, Indonesia"
+85346,Balikpapan,AS,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Balikpapan, Indonesia","$ hlrlookup 0853460000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Balikpapan, Indonesia"

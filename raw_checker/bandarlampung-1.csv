@@ -1,0 +1,29 @@
+prefix,city_csv,sim_csv,provider_csv,provider_api,hlr_api,raw_text
+81172,Bandarlampung,HALO,TELKOMSEL,Telekomunikasi Selular (KARTU HALO/SIMPATI/KARTU AS),"Tanjungkarang, Indonesia","$ hlrlookup 0811720000000
+
+Operator: Telekomunikasi Selular (KARTU HALO/SIMPATI/KARTU AS)
+HLR     : Tanjungkarang, Indonesia"
+81179,Bandarlampung,HALO,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Tanjungkarang, Indonesia","$ hlrlookup 0811790000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Tanjungkarang, Indonesia"
+81272,Bandarlampung,HALO / SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Tanjungkarang, Indonesia","$ hlrlookup 0812720000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Tanjungkarang, Indonesia"
+81279,Bandarlampung,HALO / SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Tanjungkarang, Indonesia","$ hlrlookup 0812790000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Tanjungkarang, Indonesia"
+813590,Bandarlampung,HALO / SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Madiun, Indonesia","$ hlrlookup 08135900000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Madiun, Indonesia"
+813591,Bandarlampung,HALO / SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Madiun, Indonesia","$ hlrlookup 08135910000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Madiun, Indonesia"
+813592,Bandarlampung,HALO / SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Madiun, Indonesia","$ hlrlookup 08135920000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Madiun, Indonesia"

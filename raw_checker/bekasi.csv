@@ -1,0 +1,5 @@
+prefix,city_csv,sim_csv,provider_csv,provider_api,hlr_api,raw_text
+82187,Bekasi,SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Makasar, Indonesia","$ hlrlookup 0821870000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Makasar, Indonesia"

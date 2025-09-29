@@ -1,0 +1,178 @@
+name: Debug Workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_number:
+        description: "Phone number to test (e.g., 081234567890)"
+        required: true
+        default: "081234567890"
+      headless:
+        description: "Run in headless mode"
+        required: true
+        default: true
+        type: boolean
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          playwright install chromium
+
+      - name: Create debug configuration
+        run: |
+          echo "DEBUG=true" >> .env
+          echo "TEST_NUMBER=${{ github.event.inputs.test_number }}" >> .env
+          echo "HEADLESS=${{ github.event.inputs.headless }}" >> .env
+
+      - name: Modify debug script for CI
+        run: |
+          cat > scripts/checker_debug_ci.py << 'EOF'
+          import asyncio
+          import os
+          from datetime import datetime
+          from pathlib import Path
+          from playwright.async_api import async_playwright
+
+          URL = "https://ceebydith.com/cek-hlr-lokasi-hp.html"
+
+          def log_debug(message: str):
+              """Helper function untuk print debug message dengan timestamp"""
+              timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+              print(f"[DEBUG {timestamp}] {message}")
+
+          async def check_number(page, msisdn: str) -> dict:
+              """Cek 1 nomor di halaman HLR lookup dengan debug messages yang detail"""
+              log_debug(f"🌐 Membuka URL: {URL}")
+              await page.goto(URL, wait_until="domcontentloaded", timeout=60000)
+              log_debug("✅ Halaman berhasil dibuka")
+
+              # Screenshot halaman awal
+              await page.screenshot(path="debug_initial.png")
+              log_debug("📸 Screenshot awal disimpan")
+
+              # tunggu input aktif
+              log_debug("⏳ Menunggu input field menjadi aktif...")
+              await page.wait_for_selector("#msisdn:not([disabled])", timeout=10000)
+              log_debug("✅ Input field sudah aktif")
+
+              # isi nomor
+              log_debug(f"📝 Mengisi nomor: {msisdn}")
+              await page.fill("#msisdn", msisdn)
+              await page.screenshot(path="debug_filled.png")
+              log_debug("✅ Nomor berhasil diisi")
+
+              # tunggu tombol aktif lalu klik
+              log_debug("⏳ Menunggu tombol cek menjadi aktif...")
+              await page.wait_for_selector("#find:not([disabled])", timeout=5000)
+              log_debug("🖱️ Mengklik tombol cek")
+              await page.click("#find")
+
+              # Screenshot setelah klik
+              await page.screenshot(path="debug_after_click.png")
+
+              # tunggu hasil
+              log_debug("⏳ Menunggu hasil pengecekan...")
+              try:
+                  await page.wait_for_function(
+                      """() => {
+                          const el = document.querySelector("pre.message");
+                          if (!el) return false;
+                          const txt = el.innerText;
+                          return txt.includes("Operator") || txt.includes("ERROR");
+                      }""",
+                      timeout=15000
+                  )
+                  text = await page.inner_text("pre.message")
+                  log_debug("✅ Hasil ditemukan")
+                  log_debug(f"📄 Raw response:\n{text}")
+                  
+                  # Screenshot hasil
+                  await page.screenshot(path="debug_result.png")
+              except Exception as e:
+                  log_debug(f"⚠️ Timeout untuk {msisdn}: {str(e)}")
+                  await page.screenshot(path="debug_error.png")
+                  return {"provider": None, "hlr": None, "raw_text": "", "error": str(e)}
+
+              # parsing hasil
+              provider, hlr = None, None
+              for line in text.splitlines():
+                  if "Operator" in line:
+                      provider = line.split(":", 1)[1].strip()
+                      log_debug(f"📱 Provider terdeteksi: {provider}")
+                  elif "HLR" in line:
+                      hlr = line.split(":", 1)[1].strip()
+                      log_debug(f"📍 HLR terdeteksi: {hlr}")
+
+              return {
+                  "provider": provider,
+                  "hlr": hlr,
+                  "raw_text": text,
+                  "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+              }
+
+          async def run_debug_test():
+              """Run debug test with CI parameters"""
+              msisdn = os.getenv("TEST_NUMBER", "081234567890")
+              headless = os.getenv("HEADLESS", "true").lower() == "true"
+              
+              log_debug(f"🚀 Memulai debug test dengan nomor: {msisdn}")
+              log_debug(f"🎭 Mode headless: {headless}")
+              
+              try:
+                  async with async_playwright() as p:
+                      browser = await p.chromium.launch(headless=headless)
+                      page = await browser.new_page()
+                      result = await check_number(page, msisdn)
+                      
+                      log_debug("\n=== HASIL PENGECEKAN ===")
+                      log_debug(f"📱 Provider: {result['provider']}")
+                      log_debug(f"📍 HLR: {result['hlr']}")
+                      log_debug(f"⏰ Waktu: {result['timestamp']}")
+                      log_debug("=====================")
+                      
+                      await browser.close()
+                      
+                      # Save results to file
+                      with open("debug_results.txt", "w") as f:
+                          f.write(f"Test Number: {msisdn}\n")
+                          f.write(f"Timestamp: {result['timestamp']}\n")
+                          f.write(f"Provider: {result['provider']}\n")
+                          f.write(f"HLR: {result['hlr']}\n")
+                          f.write(f"\nRaw Response:\n{result['raw_text']}")
+                      
+                      return result
+                      
+              except Exception as e:
+                  log_debug(f"❌ Error dalam test: {str(e)}")
+                  with open("debug_error.txt", "w") as f:
+                      f.write(f"Error: {str(e)}")
+                  raise e
+
+          if __name__ == "__main__":
+              asyncio.run(run_debug_test())
+          EOF
+
+      - name: Run debug test
+        run: python scripts/checker_debug_ci.py
+
+      - name: Upload debug artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: debug-artifacts
+          path: |
+            debug_*.png
+            debug_*.txt
+          retention-days: 7

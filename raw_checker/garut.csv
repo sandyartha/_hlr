@@ -1,0 +1,9 @@
+prefix,city_csv,sim_csv,provider_csv,provider_api,hlr_api,raw_text
+82156,Garut,SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Palangkaraya, Indonesia","$ hlrlookup 0821560000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Palangkaraya, Indonesia"
+82262,Garut,SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Bandung, Indonesia","$ hlrlookup 0822620000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Bandung, Indonesia"

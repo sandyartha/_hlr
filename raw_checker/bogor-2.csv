@@ -1,0 +1,17 @@
+prefix,city_csv,sim_csv,provider_csv,provider_api,hlr_api,raw_text
+82185,Bogor,SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Tanjungkarang, Indonesia","$ hlrlookup 0821850000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Tanjungkarang, Indonesia"
+8225,Bogor,SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Balikpapan, Indonesia","$ hlrlookup 082250000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Balikpapan, Indonesia"
+85211,Bogor,AS,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Jakarta, Indonesia","$ hlrlookup 0852110000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Jakarta, Indonesia"
+85311,Bogor,AS,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Jakarta, Indonesia","$ hlrlookup 0853110000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Jakarta, Indonesia"

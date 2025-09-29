@@ -1,0 +1,17 @@
+prefix,city_csv,sim_csv,provider_csv,provider_api,hlr_api,raw_text
+82254,Cilegon,SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Banjarmasin, Indonesia","$ hlrlookup 0822540000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Banjarmasin, Indonesia"
+822674,Cilegon,SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Medan, Indonesia","$ hlrlookup 08226740000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Medan, Indonesia"
+822675,Cilegon,SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Medan, Indonesia","$ hlrlookup 08226750000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Medan, Indonesia"
+822676,Cilegon,SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Medan, Indonesia","$ hlrlookup 08226760000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Medan, Indonesia"

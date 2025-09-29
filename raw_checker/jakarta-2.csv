@@ -1,0 +1,28 @@
+prefix,city_csv,sim_csv,provider_csv,provider_api,hlr_api,raw_text
+81118,Jakarta,HALO,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Jakarta, Indonesia","$ hlrlookup 0811180000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Jakarta, Indonesia"
+81119,Jakarta,HALO,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Jakarta, Indonesia","$ hlrlookup 0811190000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Jakarta, Indonesia"
+8118,Jakarta,HALO,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Jakarta, Indonesia","$ hlrlookup 081180000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Jakarta, Indonesia"
+8119,Jakarta,HALO,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Jakarta, Indonesia","$ hlrlookup 081190000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Jakarta, Indonesia"
+8120,Jakarta,HALO / SIMPATI,TELKOMSEL,,,"$ hlrlookup 081200000000
+
+ERROR: Data untuk nomor 081200000000 tidak ditemukan"
+81210,Jakarta,HALO / SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Jakarta, Indonesia","$ hlrlookup 0812100000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Jakarta, Indonesia"
+81213,Jakarta,HALO / SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Jakarta, Indonesia","$ hlrlookup 0812130000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Jakarta, Indonesia"

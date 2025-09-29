@@ -1,0 +1,13 @@
+prefix,city_csv,sim_csv,provider_csv,provider_api,hlr_api,raw_text
+85244,Jayapura,AS,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Jayapura, Indonesia","$ hlrlookup 0852440000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Jayapura, Indonesia"
+85344,Jayapura,AS,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Jayapura, Indonesia","$ hlrlookup 0853440000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Jayapura, Indonesia"
+85354,Jayapura,AS,TELKOMSEL,Telekomunikasi Selular (KARTU HALO/SIMPATI/KARTU AS),"Timika, Indonesia","$ hlrlookup 0853540000000
+
+Operator: Telekomunikasi Selular (KARTU HALO/SIMPATI/KARTU AS)
+HLR     : Timika, Indonesia"

@@ -1,0 +1,5 @@
+prefix,city_csv,sim_csv,provider_csv,provider_api,hlr_api,raw_text
+82276,Boyolali,SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Medan, Indonesia","$ hlrlookup 0822760000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Medan, Indonesia"

@@ -1,0 +1,5 @@
+prefix,city_csv,sim_csv,provider_csv,provider_api,hlr_api,raw_text
+82332,Bondowoso,SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Surabaya, Indonesia","$ hlrlookup 0823320000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Surabaya, Indonesia"

@@ -1,0 +1,25 @@
+prefix,city_csv,sim_csv,provider_csv,provider_api,hlr_api,raw_text
+8236,Denpasar,SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Bandaaceh, Indonesia","$ hlrlookup 082360000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Bandaaceh, Indonesia"
+85237,Denpasar,AS,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Denpasar, Indonesia","$ hlrlookup 0852370000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Denpasar, Indonesia"
+85238,Denpasar,AS,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Denpasar, Indonesia","$ hlrlookup 0852380000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Denpasar, Indonesia"
+85253,Denpasar,AS,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Kupang, Indonesia","$ hlrlookup 0852530000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Kupang, Indonesia"
+85337,Denpasar,AS,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Denpasar, Indonesia","$ hlrlookup 0853370000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Denpasar, Indonesia"
+85338,Denpasar,AS,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Kupang, Indonesia","$ hlrlookup 0853380000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Kupang, Indonesia"

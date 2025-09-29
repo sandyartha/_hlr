@@ -1,0 +1,25 @@
+prefix,city_csv,sim_csv,provider_csv,provider_api,hlr_api,raw_text
+85314,Jakarta,AS,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Bandung, Indonesia","$ hlrlookup 0853140000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Bandung, Indonesia"
+85315,Jakarta,AS,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Bandung, Indonesia","$ hlrlookup 0853150000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Bandung, Indonesia"
+85316,Jakarta,AS,TELKOMSEL,Telekomunikasi Selular (KARTU HALO/SIMPATI/KARTU AS),"Jakarta, Indonesia","$ hlrlookup 0853160000000
+
+Operator: Telekomunikasi Selular (KARTU HALO/SIMPATI/KARTU AS)
+HLR     : Jakarta, Indonesia"
+85317,Jakarta,AS,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Cirebon, Indonesia","$ hlrlookup 0853170000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Cirebon, Indonesia"
+85318,Jakarta,AS,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Cirebon, Indonesia","$ hlrlookup 0853180000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Cirebon, Indonesia"
+85319,Jakarta,AS,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Jakarta, Indonesia","$ hlrlookup 0853190000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Jakarta, Indonesia"

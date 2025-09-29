@@ -1,0 +1,9 @@
+prefix,city_csv,sim_csv,provider_csv,provider_api,hlr_api,raw_text
+811716,Baturaja,HALO,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Baturaja, Indonesia","$ hlrlookup 08117160000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Baturaja, Indonesia"
+812716,Baturaja,HALO / SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Baturaja, Indonesia","$ hlrlookup 08127160000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Baturaja, Indonesia"

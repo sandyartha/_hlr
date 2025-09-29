@@ -1,0 +1,5 @@
+prefix,city_csv,sim_csv,provider_csv,provider_api,hlr_api,raw_text
+811624,Brastagi,HALO,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Kabanjahe, Indonesia","$ hlrlookup 08116240000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Kabanjahe, Indonesia"

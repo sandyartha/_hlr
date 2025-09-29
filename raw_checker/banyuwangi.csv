@@ -1,0 +1,5 @@
+prefix,city_csv,sim_csv,provider_csv,provider_api,hlr_api,raw_text
+82333,Banyuwangi,SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Jember, Indonesia","$ hlrlookup 0823330000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Jember, Indonesia"

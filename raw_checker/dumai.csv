@@ -1,0 +1,25 @@
+prefix,city_csv,sim_csv,provider_csv,provider_api,hlr_api,raw_text
+811706,Dumai,HALO,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Dumai, Indonesia","$ hlrlookup 08117060000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Dumai, Indonesia"
+811750,Dumai,HALO,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Dumai, Indonesia","$ hlrlookup 08117500000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Dumai, Indonesia"
+812750,Dumai,HALO / SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Dumai, Indonesia","$ hlrlookup 08127500000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Dumai, Indonesia"
+812759,Dumai,HALO / SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Dumai, Indonesia","$ hlrlookup 08127590000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Dumai, Indonesia"
+813650,Dumai,HALO / SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Pakanbaru, Indonesia","$ hlrlookup 08136500000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Pakanbaru, Indonesia"
+813651,Dumai,HALO / SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Dumai, Indonesia","$ hlrlookup 08136510000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Dumai, Indonesia"

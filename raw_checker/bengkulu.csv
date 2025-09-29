@@ -1,0 +1,13 @@
+prefix,city_csv,sim_csv,provider_csv,provider_api,hlr_api,raw_text
+81173,Bengkulu,HALO,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Bengkulu, Indonesia","$ hlrlookup 0811730000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Bengkulu, Indonesia"
+81368,Bengkulu,HALO / SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Palembang, Indonesia","$ hlrlookup 0813680000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Palembang, Indonesia"
+82173,Bengkulu,SIMPATI,TELKOMSEL,Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS,"Pakanbaru, Indonesia","$ hlrlookup 0821730000000
+
+Operator: Telkomunikasi Seluler (Telkomsel) - KartuHALO/Simpati/KartuAS
+HLR     : Pakanbaru, Indonesia"
