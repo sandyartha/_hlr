@@ -68,7 +68,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install requests
-          playwright install chromium --with-deps
+          playwright install chromium firefox --with-deps
 
       - name: Verify Playwright installation
         run: |
@@ -294,24 +294,21 @@ jobs:
                           headless=headless,
                           ignore_https_errors=True,  # Ignore SSL errors
                           args=[
-                              '--no-sandbox',
-                              '--disable-setuid-sandbox',
                               '--disable-dev-shm-usage',
-                              '--disable-gpu',
-                              '--no-first-run',
-                              '--no-zygote',
-                              '--single-process',
-                              '--disable-extensions',
-                              '--disable-web-security',
-                              '--disable-features=IsolateOrigins,site-per-process'
+                              '--no-sandbox',
+                              '--disable-setuid-sandbox'
                           ]
                       )
+                      log_debug("✅ Browser berhasil diinisialisasi")
                       
-                      # Create new page with additional options
+                      # Create new page with minimal configuration
                       page = await browser.new_page(
                           user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/116.0.0.0 Safari/537.36",
                           viewport={'width': 1280, 'height': 720}
                       )
+                      
+                      # Set timezone
+                      await page.emulate_timezone('Asia/Jakarta')
                       
                       # Set default timeouts
                       page.set_default_timeout(30000)
