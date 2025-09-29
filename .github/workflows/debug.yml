@@ -90,258 +90,38 @@ jobs:
         run: |
           cat > scripts/checker_debug_ci.py << 'EOF'
           import asyncio
-          import os
-          import time
-          from datetime import datetime
-          from pathlib import Path
-          from playwright.async_api import async_playwright, TimeoutError
+          from playwright.async_api import async_playwright
 
-          URL = "https://ceebydith.com/cek-hlr-lokasi-hp.html"
-          MAX_RETRIES = 3
-          RETRY_DELAYS = [5, 10, 15]  # Increasing delays between retries
-
-          def log_debug(message: str):
-              """Helper function untuk print debug message dengan timestamp"""
-              timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
-              print(f"[DEBUG {timestamp}] {message}")
-
-          async def check_number(page, msisdn: str) -> dict:
-              """Cek 1 nomor di halaman HLR lookup dengan debug messages yang detail"""
-              log_debug(f"🌐 Membuka URL: {URL}")
-              
-              for attempt in range(MAX_RETRIES):
-                  try:
-                      log_debug(f"⏳ Mencoba membuka halaman (attempt {attempt + 1}/{MAX_RETRIES})...")
-                      
-                      try:
-                          # First try with shorter timeout
-                          await page.goto(URL, 
-                                        wait_until="load", 
-                                        timeout=30000)
-                      except Exception as e:
-                          log_debug(f"⚠️ First attempt failed, retrying with domcontentloaded...")
-                          # If failed, try with domcontentloaded
-                          await page.goto(URL, 
-                                        wait_until="domcontentloaded",
-                                        timeout=30000)
-                      
-                      log_debug("✅ Halaman awal dimuat")
-                      
-                      # Try to bypass any security checks
-                      await page.evaluate("""() => {
-                          Object.defineProperty(navigator, 'webdriver', {
-                              get: () => undefined
-                          });
-                      }""")
-                      
-                      # Wait for initial JavaScript execution
-                      await page.wait_for_load_state("load")
-                      await page.wait_for_timeout(5000)  # Wait for initial AJAX calls
-                      
-                      # Screenshot halaman awal
-                      await page.screenshot(path=f"debug_initial_{attempt + 1}.png")
-                      log_debug("📸 Screenshot awal disimpan")
-                      
-                      # Tunggu sampai form container muncul (biasanya div parent dari input)
-                      log_debug("⏳ Menunggu form container...")
-                      await page.wait_for_selector(".content-wrapper", timeout=30000)
-                      
-                      # Debug page content and save
-                      page_content = await page.content()
-                      log_debug(f"📄 Page HTML length: {len(page_content)} bytes")
-                      with open(f"debug_html_{attempt + 1}.txt", "w", encoding="utf-8") as f:
-                          f.write(page_content)
-                      
-                      # Tunggu dan cek status input field
-                      log_debug("⏳ Menunggu input field diinisialisasi...")
-                      input_ready = False
-                      max_input_wait = 30  # seconds
-                      start_time = time.time()
-                      
-                      while time.time() - start_time < max_input_wait:
-                          try:
-                              # Cek jika input sudah ada dan enabled
-                              is_enabled = await page.evaluate("""() => {
-                                  const input = document.querySelector("#msisdn");
-                                  return input && !input.disabled;
-                              }""")
-                              
-                              if is_enabled:
-                                  input_ready = True
-                                  log_debug("✅ Input field sudah aktif")
-                                  break
-                              
-                              await page.wait_for_timeout(1000)  # Check every second
-                          except Exception as e:
-                              log_debug(f"⏳ Masih menunggu input... ({int(time.time() - start_time)}s)")
-                      
-                      if not input_ready:
-                          raise Exception("Timeout menunggu input field menjadi aktif")
-                          
-                      # Double check element is really interactive
-                      element = await page.wait_for_selector("#msisdn:not([disabled])", 
-                                                           state="visible",
-                                                           timeout=5000)
-                      if not element:
-                          raise Exception("Input field tidak bisa diinteraksi")
-                          
-                      log_debug("✅ Input field siap digunakan")
-                      
-                      # Jika berhasil, keluar dari loop
-                      break
-                      
-                  except Exception as e:
-                      log_debug(f"❌ Error pada attempt {attempt + 1}: {str(e)}")
-                      await page.screenshot(path=f"debug_error_load_{attempt + 1}.png")
-                      
-                      if attempt == MAX_RETRIES - 1:  # Jika ini attempt terakhir
-                          log_debug("❌ Semua attempt gagal")
-                          raise e
-                      
-                      # Tunggu dengan delay yang meningkat
-                      delay = RETRY_DELAYS[attempt]
-                      log_debug(f"⏳ Menunggu {delay} detik sebelum mencoba lagi...")
-                      await asyncio.sleep(delay)
-
-              # isi nomor
-              log_debug(f"📝 Mengisi nomor: {msisdn}")
-              await page.fill("#msisdn", msisdn)
-              await page.screenshot(path="debug_filled.png")
-              log_debug("✅ Nomor berhasil diisi")
-
-              # tunggu tombol aktif lalu klik
-              log_debug("⏳ Menunggu tombol cek menjadi aktif...")
-              await page.wait_for_selector("#find:not([disabled])", timeout=5000)
-              log_debug("🖱️ Mengklik tombol cek")
-              await page.click("#find")
-
-              # Screenshot setelah klik
-              await page.screenshot(path="debug_after_click.png")
-
-              # tunggu hasil dengan memperhatikan pesan loading
-              log_debug("⏳ Menunggu hasil pengecekan...")
-              try:
-                  # Tunggu sampai pesan loading muncul
-                  await page.wait_for_function(
-                      """() => {
-                          const el = document.querySelector("pre.message");
-                          return el && (
-                              el.innerText.includes("tunggu") || 
-                              el.innerText.includes("Operator") || 
-                              el.innerText.includes("ERROR")
-                          );
-                      }""",
-                      timeout=15000
-                  )
-                  
-                  # Jika muncul pesan "tunggu", wait sampai ada hasil
-                  loading_text = await page.inner_text("pre.message")
-                  if "tunggu" in loading_text.lower():
-                      log_debug("⏳ Terdeteksi pesan loading, menunggu hasil...")
-                      
-                      # Wait for the actual result
-                      await page.wait_for_function(
-                          """() => {
-                              const el = document.querySelector("pre.message");
-                              if (!el) return false;
-                              const txt = el.innerText;
-                              return txt.includes("Operator") || txt.includes("ERROR");
-                          }""",
-                          timeout=30000  # Longer timeout for actual result
-                      )
-                  
-                  # Get final result
-                  text = await page.inner_text("pre.message")
-                  log_debug("✅ Hasil ditemukan")
-                  log_debug(f"📄 Raw response:\n{text}")
-                  
-                  # Screenshot hasil
-                  await page.screenshot(path="debug_result.png")
-              except Exception as e:
-                  log_debug(f"⚠️ Timeout untuk {msisdn}: {str(e)}")
-                  await page.screenshot(path="debug_error.png")
-                  return {"provider": None, "hlr": None, "raw_text": "", "error": str(e)}
-
-              # parsing hasil
-              provider, hlr = None, None
-              for line in text.splitlines():
-                  if "Operator" in line:
-                      provider = line.split(":", 1)[1].strip()
-                      log_debug(f"📱 Provider terdeteksi: {provider}")
-                  elif "HLR" in line:
-                      hlr = line.split(":", 1)[1].strip()
-                      log_debug(f"📍 HLR terdeteksi: {hlr}")
-
-              return {
-                  "provider": provider,
-                  "hlr": hlr,
-                  "raw_text": text,
-                  "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-              }
-
-          async def run_debug_test():
-              """Run debug test with CI parameters"""
-              msisdn = os.getenv("TEST_NUMBER", "081234567890")
-              headless = os.getenv("HEADLESS", "true").lower() == "true"
-              
-              log_debug(f"🚀 Memulai debug test dengan nomor: {msisdn}")
-              log_debug(f"🎭 Mode headless: {headless}")
-              
+          async def scrape_basic_info():
+              """Scrape title dan description dari halaman web"""
               try:
                   async with async_playwright() as p:
-                      # Configure browser with necessary flags for CI environment
-                      browser = await p.chromium.launch(
-                          headless=headless,
-                          ignore_https_errors=True,  # Ignore SSL errors
-                          args=[
-                              '--disable-dev-shm-usage',
-                              '--no-sandbox',
-                              '--disable-setuid-sandbox'
-                          ]
-                      )
-                      log_debug("✅ Browser berhasil diinisialisasi")
+                      # Launch browser
+                      browser = await p.chromium.launch(headless=True)
+                      page = await browser.new_page()
                       
-                      # Create new page with minimal configuration
-                      page = await browser.new_page(
-                          user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/116.0.0.0 Safari/537.36",
-                          viewport={'width': 1280, 'height': 720}
-                      )
+                      # Navigate to the page
+                      print("Membuka halaman...")
+                      await page.goto("https://ceebydith.com/cek-hlr-lokasi-hp.html")
                       
-                      # Set timezone
-                      await page.emulate_timezone('Asia/Jakarta')
+                      # Get page title
+                      title = await page.title()
+                      print(f"Title: {title}")
                       
-                      # Set default timeouts
-                      page.set_default_timeout(30000)
-                      page.set_default_navigation_timeout(30000)
-                      
-                      result = await check_number(page, msisdn)
-                      
-                      log_debug("\n=== HASIL PENGECEKAN ===")
-                      log_debug(f"📱 Provider: {result['provider']}")
-                      log_debug(f"📍 HLR: {result['hlr']}")
-                      log_debug(f"⏰ Waktu: {result['timestamp']}")
-                      log_debug("=====================")
+                      # Get meta description
+                      description = await page.evaluate("""() => {
+                          const meta = document.querySelector('meta[name="description"]');
+                          return meta ? meta.getAttribute('content') : '';
+                      }""")
+                      print(f"Description: {description}")
                       
                       await browser.close()
-                      
-                      # Save results to file
-                      with open("debug_results.txt", "w") as f:
-                          f.write(f"Test Number: {msisdn}\n")
-                          f.write(f"Timestamp: {result['timestamp']}\n")
-                          f.write(f"Provider: {result['provider']}\n")
-                          f.write(f"HLR: {result['hlr']}\n")
-                          f.write(f"\nRaw Response:\n{result['raw_text']}")
-                      
-                      return result
-                      
               except Exception as e:
-                  log_debug(f"❌ Error dalam test: {str(e)}")
-                  with open("debug_error.txt", "w") as f:
-                      f.write(f"Error: {str(e)}")
+                  print(f"Error: {str(e)}")
                   raise e
-
+              
           if __name__ == "__main__":
-              asyncio.run(run_debug_test())
+              asyncio.run(scrape_basic_info())
           EOF
 
       - name: Run debug test
