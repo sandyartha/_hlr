@@ -24,12 +24,40 @@ jobs:
         with:
           python-version: "3.10"
 
-      - name: Install dependencies
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libnss3 \
+            libnspr4 \
+            libatk1.0-0 \
+            libatk-bridge2.0-0 \
+            libcups2 \
+            libdrm2 \
+            libxkbcommon0 \
+            libxcomposite1 \
+            libxdamage1 \
+            libxfixes3 \
+            libxrandr2 \
+            libgbm1 \
+            libasound2
+
+      - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install requests
-          playwright install chromium
+          playwright install chromium --with-deps
+
+      - name: Verify Playwright installation
+        run: |
+          python -c "
+          from playwright.sync_api import sync_playwright
+          with sync_playwright() as p:
+              browser = p.chromium.launch()
+              browser.close()
+          print('✅ Playwright verification successful')
+          "
 
       - name: Setup Proxy
         run: |
@@ -180,11 +208,21 @@ jobs:
               
               try:
                   async with async_playwright() as p:
-                      # Configure browser with proxy
+                      # Configure browser with necessary flags for CI environment
                       proxy_server = os.getenv("PROXY_SERVER")
                       browser = await p.chromium.launch(
                           headless=headless,
-                          proxy={"server": proxy_server} if proxy_server else None
+                          proxy={"server": proxy_server} if proxy_server else None,
+                          args=[
+                              '--no-sandbox',
+                              '--disable-setuid-sandbox',
+                              '--disable-dev-shm-usage',
+                              '--disable-gpu',
+                              '--no-first-run',
+                              '--no-zygote',
+                              '--single-process',
+                              '--disable-extensions'
+                          ]
                       )
                       
                       # Create new page with additional options
