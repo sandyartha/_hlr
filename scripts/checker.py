@@ -18,57 +18,87 @@ async def check_number(page, msisdn: str) -> dict:
     """Cek 1 nomor di halaman HLR lookup dengan bypass disabled"""
     for attempt in range(2):
         try:
-            # Block resources yang tidak diperlukan
-            await page.route("**/*.{png,jpg,jpeg,gif,css,woff,woff2}", lambda route: route.abort())
-            await page.route("**/{analytics,facebook,google}*", lambda route: route.abort())
-            await page.route("**/ads*", lambda route: route.abort())
+            # Hard reload page untuk menghindari cache
+            await page.goto("about:blank")
+            await page.wait_for_timeout(500)
             
-            # Set timeout yang lebih pendek dan hanya tunggu sampai HTML loaded
-            await page.goto(URL, wait_until="load", timeout=10000)
+            # Navigate ke halaman dengan pendekatan yang lebih sederhana
+            await page.goto(URL, wait_until="commit", timeout=10000)
             
-            try:
-                # Tunggu form input muncul
-                await page.wait_for_selector('#msisdn', state="visible", timeout=5000)
-            except Exception as e:
-                print(f"⚠️ Form tidak muncul, mencoba reload...")
-                await page.reload(wait_until="load")
-                await page.wait_for_selector('#msisdn', state="visible", timeout=5000)
-
-            # paksa enable input & tombol
-            await page.evaluate("""
-                document.querySelector('#msisdn')?.removeAttribute('disabled');
-                document.querySelector('#find')?.removeAttribute('disabled');
-            """)
-
-            # isi nomor & klik
-            await page.fill("#msisdn", msisdn)
+            # Tunggu dan cek form dengan lebih agresif
+            for _ in range(3):
+                try:
+                    # Coba enable form dengan JavaScript
+                    await page.evaluate("""() => {
+                        function enableElement(selector) {
+                            const el = document.querySelector(selector);
+                            if (el) {
+                                el.disabled = false;
+                                el.removeAttribute('disabled');
+                                return true;
+                            }
+                            return false;
+                        }
+                        return enableElement('#msisdn') && enableElement('#find');
+                    }""")
+                    
+                    # Cek apakah form sudah bisa digunakan
+                    input_visible = await page.wait_for_selector("#msisdn", 
+                        state="visible", timeout=3000)
+                    button_visible = await page.wait_for_selector("#find", 
+                        state="visible", timeout=3000)
+                        
+                    if input_visible and button_visible:
+                        break
+                except:
+                    await page.reload(wait_until="commit")
+                    await page.wait_for_timeout(1000)
+            
+            # Fill dan submit form
+            await page.evaluate('(msisdn) => document.querySelector("#msisdn").value = msisdn', msisdn)
             await page.click("#find")
 
-            try:
-                # Tunggu hasil dengan timeout yang lebih pendek
-                await page.wait_for_selector("pre.message", timeout=10000)
-                text = await page.inner_text("pre.message")
-                
-                # Jika tidak ada hasil dalam waktu 2 detik, anggap error
-                if not text.strip():
-                    await asyncio.sleep(2)
-                    text = await page.inner_text("pre.message")
-                    if not text.strip():
-                        raise Exception("No response data")
+            # Tunggu dan ambil hasil dengan retry
+            result_text = None
+            for _ in range(3):
+                try:
+                    # Tunggu message muncul
+                    await page.wait_for_selector("pre.message", timeout=5000)
+                    
+                    # Tunggu konten berubah
+                    await page.wait_for_function("""
+                        () => {
+                            const el = document.querySelector('pre.message');
+                            return el && el.innerText && 
+                                (el.innerText.includes('Operator') || 
+                                 el.innerText.includes('ERROR'));
+                        }
+                    """, timeout=5000)
+                    
+                    result_text = await page.eval_on_selector(
+                        "pre.message", 
+                        "el => el.innerText"
+                    )
+                    
+                    if result_text and result_text.strip():
+                        break
                         
-            except Exception as e:
-                print(f"⚠️ Timeout menunggu hasil untuk {msisdn}")
-                raise e
+                except Exception as e:
+                    print(f"⚠️ Menunggu hasil... retry")
+                    await page.wait_for_timeout(1000)
+            
+            if not result_text:
+                raise Exception("Tidak ada respon dari server")
 
             # parsing hasil
             provider, hlr = None, None
-            for line in text.splitlines():
+            for line in result_text.splitlines():
                 if "Operator" in line:
                     provider = line.split(":", 1)[1].strip()
                 elif "HLR" in line:
                     hlr = line.split(":", 1)[1].strip()
 
-            return {"provider": provider, "hlr": hlr, "raw_text": text}
+            return {"provider": provider, "hlr": hlr, "raw_text": result_text}
 
         except Exception as e:
             print(f"⚠️ Gagal cek {msisdn} (attempt {attempt+1}): {e}")
@@ -101,19 +131,32 @@ async def process_file(playwright, filepath: Path):
             '--disable-dev-shm-usage',
             '--no-sandbox',
             '--disable-setuid-sandbox',
-            '--disable-javascript',  # Disable JavaScript
-            '--disable-gpu',         # Disable GPU hardware acceleration
+            '--disable-gpu',
             '--disable-notifications',
-            '--disable-extensions'
+            '--disable-extensions',
+            '--disable-background-networking',
+            '--disable-background-timer-throttling',
+            '--disable-backgrounding-occluded-windows',
+            '--disable-breakpad',
+            '--disable-component-extensions-with-background-pages',
+            '--disable-features=TranslateUI,BlinkGenPropertyTrees',
+            '--disable-ipc-flooding-protection',
+            '--disable-default-apps'
         ]
     )
     context = await browser.new_context(
-        viewport={'width': 800, 'height': 600},  # Smaller viewport
-        user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        java_script_enabled=False,  # Disable JavaScript
-        bypass_csp=True,  # Bypass Content Security Policy
+        viewport={'width': 800, 'height': 600},
+        user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36',
+        bypass_csp=True,
+        ignore_https_errors=True
     )
     page = await context.new_page()
+    
+    # Set default timeout untuk semua operasi
+    page.set_default_timeout(10000)
+    
+    # Aktifkan intercept request
+    await page.route('**/*', lambda route: route.continue_() if route.request.resource_type in ['document', 'script'] else route.abort())
 
     for idx, row in df.iterrows():
         prefix = str(row["prefix"])
