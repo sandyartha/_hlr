@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 import pandas as pd
 import random
 from pathlib import Path
@@ -118,12 +119,24 @@ async def process_file(playwright, filepath: Path):
 
 
 async def main():
+    # Get list of all CSV files
+    csv_files = list(RAW_DIR.glob("*.csv"))
+    if not csv_files:
+        print("❌ No CSV files found in raw directory!")
+        return
+
+    # Select one file based on current minute
+    current_minute = int(datetime.datetime.now().minute)
+    selected_file = csv_files[current_minute % len(csv_files)]
+    
+    print(f"🎯 Selected file for this run: {selected_file.name}")
+    
     async with async_playwright() as p:
-        for filepath in RAW_DIR.glob("*.csv"):
-            await process_file(p, filepath)
+        await process_file(p, selected_file)
 
 
 if __name__ == "__main__":
+    import datetime
     asyncio.run(main())
 
 # ggggg
