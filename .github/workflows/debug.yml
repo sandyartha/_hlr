@@ -103,7 +103,10 @@ jobs:
                               '--disable-blink-features=AutomationControlled',
                               '--disable-features=IsolateOrigins,site-per-process',
                               '--disable-site-isolation-trials',
-                              '--start-maximized'  # Maximize window in non-headless mode
+                              '--start-maximized',  # Maximize window in non-headless mode
+                              '--no-sandbox',
+                              '--disable-setuid-sandbox',
+                              '--disable-dev-shm-usage'
                           ]
                       )
                       
@@ -194,7 +197,7 @@ jobs:
           EOF
 
       - name: Run debug test
-        run: python scripts/checker_debug_ci.py
+        run: xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" python scripts/checker_debug_ci.py
 
       - name: Upload debug artifacts
         if: always()
