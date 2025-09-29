@@ -28,7 +28,15 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install requests
           playwright install chromium
+
+      - name: Setup Proxy
+        run: |
+          echo "PROXY_SERVER=socks5://localhost:9050" >> .env
+          sudo apt-get update && sudo apt-get install -y tor
+          sudo service tor start
+          sleep 5
 
       - name: Create debug configuration
         run: |
@@ -58,11 +66,18 @@ jobs:
               """Cek 1 nomor di halaman HLR lookup dengan debug messages yang detail"""
               log_debug(f"🌐 Membuka URL: {URL}")
               
-              try:
-                  # Wait for page load with extended timeout
-                  log_debug("⏳ Menunggu halaman dimuat...")
-                  await page.goto(URL, wait_until="networkidle", timeout=90000)
-                  log_debug("✅ Halaman berhasil dibuka")
+              for attempt in range(MAX_RETRIES):
+                  try:
+                      log_debug(f"⏳ Mencoba membuka halaman (attempt {attempt + 1}/{MAX_RETRIES})...")
+                      
+                      # Use domcontentloaded instead of networkidle
+                      await page.goto(URL, 
+                                    wait_until="domcontentloaded",
+                                    timeout=30000)
+                      
+                      # Wait for body to be available
+                      await page.wait_for_selector("body", timeout=10000)
+                      log_debug("✅ Halaman berhasil dibuka")
                   
                   # Tunggu sampai JavaScript selesai dimuat
                   log_debug("⏳ Menunggu semua resource...")
@@ -165,8 +180,23 @@ jobs:
               
               try:
                   async with async_playwright() as p:
-                      browser = await p.chromium.launch(headless=headless)
-                      page = await browser.new_page()
+                      # Configure browser with proxy
+                      proxy_server = os.getenv("PROXY_SERVER")
+                      browser = await p.chromium.launch(
+                          headless=headless,
+                          proxy={"server": proxy_server} if proxy_server else None
+                      )
+                      
+                      # Create new page with additional options
+                      page = await browser.new_page(
+                          user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/116.0.0.0 Safari/537.36",
+                          viewport={'width': 1280, 'height': 720}
+                      )
+                      
+                      # Set default timeouts
+                      page.set_default_timeout(30000)
+                      page.set_default_navigation_timeout(30000)
+                      
                       result = await check_number(page, msisdn)
                       
                       log_debug("\n=== HASIL PENGECEKAN ===")
