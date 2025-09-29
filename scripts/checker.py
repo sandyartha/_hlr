@@ -16,10 +16,10 @@ OUT_DIR.mkdir(exist_ok=True)
 
 async def check_number(page, msisdn: str) -> dict:
     """Cek 1 nomor di halaman HLR lookup dengan bypass disabled"""
-    for attempt in range(3):
+    for attempt in range(2):  # kurangi retry ke 2 kali
         try:
-            await page.goto(URL, wait_until="networkidle", timeout=60000)
-            await asyncio.sleep(2)
+            await page.goto(URL, wait_until="networkidle", timeout=30000)  # kurangi timeout
+            await asyncio.sleep(1)  # kurangi delay
 
             # paksa enable input & tombol
             await page.evaluate("""
@@ -31,7 +31,7 @@ async def check_number(page, msisdn: str) -> dict:
             await page.fill("#msisdn", msisdn)
             await page.click("#find")
 
-            # tunggu hasil keluar
+            # tunggu hasil keluar dengan timeout yang lebih pendek
             await page.wait_for_function(
                 """() => {
                     const el = document.querySelector("pre.message");
@@ -39,7 +39,7 @@ async def check_number(page, msisdn: str) -> dict:
                     const txt = el.innerText;
                     return txt.includes("Operator") || txt.includes("ERROR");
                 }""",
-                timeout=30000
+                timeout=15000
             )
             text = await page.inner_text("pre.message")
 
@@ -69,7 +69,8 @@ async def process_file(playwright, filepath: Path):
         print(f"⏭️  Skip {filepath.name}, hasil sudah ada")
         return
 
-    print(f"🔎 Processing {filepath.name}")
+    start_time = datetime.datetime.now()
+    print(f"🔎 Processing {filepath.name} at {start_time.strftime('%H:%M:%S')}")
     df = pd.read_csv(filepath)
 
     if "prefix" not in df.columns:
@@ -109,13 +110,16 @@ async def process_file(playwright, filepath: Path):
             pd.DataFrame(results).to_csv(outpath, index=False)
             print(f"💾 Progress disimpan sementara ({idx+1} rows)")
 
-        await asyncio.sleep(2)  # delay biar ga ke-block
+        await asyncio.sleep(1)  # kurangi delay ke 1 detik
 
     await browser.close()
 
     outdf = pd.DataFrame(results)
     outdf.to_csv(outpath, index=False)
-    print(f"✅ Hasil disimpan: {outpath}")
+    end_time = datetime.datetime.now()
+    duration = (end_time - start_time).total_seconds()
+    print(f"✅ Hasil disimpan: {outpath} ({len(results)} records)")
+    print(f"⏱️ Total waktu proses: {duration:.1f} detik ({duration/len(results):.1f} detik per record)")
 
 
 async def main():
