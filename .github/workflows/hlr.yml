@@ -29,6 +29,7 @@ jobs:
       - name: Run checker
         timeout-minutes: 30
         run: |
+          mkdir -p raw_checker
           python scripts/checker.py
 
       - name: Commit results
