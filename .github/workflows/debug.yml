@@ -98,6 +98,7 @@ jobs:
 
           URL = "https://ceebydith.com/cek-hlr-lokasi-hp.html"
           MAX_RETRIES = 3
+          RETRY_DELAYS = [5, 10, 15]  # Increasing delays between retries
 
           def log_debug(message: str):
               """Helper function untuk print debug message dengan timestamp"""
@@ -112,59 +113,79 @@ jobs:
                   try:
                       log_debug(f"⏳ Mencoba membuka halaman (attempt {attempt + 1}/{MAX_RETRIES})...")
                       
-                      # Use networkidle to ensure all resources are loaded
-                      await page.goto(URL, 
-                                    wait_until="networkidle",
-                                    timeout=60000)
+                      try:
+                          # First try with shorter timeout
+                          await page.goto(URL, 
+                                        wait_until="load", 
+                                        timeout=30000)
+                      except Exception as e:
+                          log_debug(f"⚠️ First attempt failed, retrying with domcontentloaded...")
+                          # If failed, try with domcontentloaded
+                          await page.goto(URL, 
+                                        wait_until="domcontentloaded",
+                                        timeout=30000)
                       
-                      log_debug("⏳ Menunggu halaman siap...")
-                      # Wait for specific elements that indicate page is ready
-                      await page.wait_for_load_state("domcontentloaded")
+                      log_debug("✅ Halaman awal dimuat")
+                      
+                      # Try to bypass any security checks
+                      await page.evaluate("""() => {
+                          Object.defineProperty(navigator, 'webdriver', {
+                              get: () => undefined
+                          });
+                      }""")
+                      
+                      # Wait for initial JavaScript execution
                       await page.wait_for_load_state("load")
-                      await page.wait_for_load_state("networkidle")
-                      
-                      # Additional wait to ensure JavaScript execution
-                      await page.wait_for_timeout(2000)
-                      
-                      log_debug("✅ Halaman berhasil dimuat")
+                      await page.wait_for_timeout(5000)  # Wait for initial AJAX calls
                       
                       # Screenshot halaman awal
                       await page.screenshot(path=f"debug_initial_{attempt + 1}.png")
                       log_debug("📸 Screenshot awal disimpan")
-
+                      
+                      # Tunggu sampai form container muncul (biasanya div parent dari input)
+                      log_debug("⏳ Menunggu form container...")
+                      await page.wait_for_selector(".content-wrapper", timeout=30000)
+                      
                       # Debug page content and save
                       page_content = await page.content()
                       log_debug(f"📄 Page HTML length: {len(page_content)} bytes")
                       with open(f"debug_html_{attempt + 1}.txt", "w", encoding="utf-8") as f:
                           f.write(page_content)
                       
-                      # Coba berbagai selector untuk input field
-                      selectors = ["#msisdn", "[name='msisdn']", "input[type='text']"]
-                      input_found = False
+                      # Tunggu dan cek status input field
+                      log_debug("⏳ Menunggu input field diinisialisasi...")
+                      input_ready = False
+                      max_input_wait = 30  # seconds
+                      start_time = time.time()
                       
-                      for selector in selectors:
-                          log_debug(f"🔍 Mencari input field dengan selector: {selector}")
+                      while time.time() - start_time < max_input_wait:
                           try:
-                              # Wait for element with timeout
-                              element = await page.wait_for_selector(selector, 
-                                                                   state="visible",
-                                                                   timeout=5000)
-                              if element:
-                                  input_found = True
-                                  log_debug(f"✅ Input field ditemukan dengan selector: {selector}")
+                              # Cek jika input sudah ada dan enabled
+                              is_enabled = await page.evaluate("""() => {
+                                  const input = document.querySelector("#msisdn");
+                                  return input && !input.disabled;
+                              }""")
+                              
+                              if is_enabled:
+                                  input_ready = True
+                                  log_debug("✅ Input field sudah aktif")
                                   break
-                          except:
-                              continue
+                              
+                              await page.wait_for_timeout(1000)  # Check every second
+                          except Exception as e:
+                              log_debug(f"⏳ Masih menunggu input... ({int(time.time() - start_time)}s)")
                       
-                      if not input_found:
-                          raise Exception("Input field tidak ditemukan dengan semua selector yang dicoba")
-                      
-                      # tunggu input aktif dengan timeout lebih lama
-                      log_debug("⏳ Menunggu input field menjadi aktif...")
-                      await page.wait_for_selector("#msisdn:not([disabled])", 
-                                                 timeout=30000, 
-                                                 state="visible")
-                      log_debug("✅ Input field sudah aktif dan visible")
+                      if not input_ready:
+                          raise Exception("Timeout menunggu input field menjadi aktif")
+                          
+                      # Double check element is really interactive
+                      element = await page.wait_for_selector("#msisdn:not([disabled])", 
+                                                           state="visible",
+                                                           timeout=5000)
+                      if not element:
+                          raise Exception("Input field tidak bisa diinteraksi")
+                          
+                      log_debug("✅ Input field siap digunakan")
                       
                       # Jika berhasil, keluar dari loop
                       break
@@ -177,8 +198,10 @@ jobs:
                           log_debug("❌ Semua attempt gagal")
                           raise e
                       
-                      # Tunggu sebentar sebelum mencoba lagi
-                      await asyncio.sleep(5)
+                      # Tunggu dengan delay yang meningkat
+                      delay = RETRY_DELAYS[attempt]
+                      log_debug(f"⏳ Menunggu {delay} detik sebelum mencoba lagi...")
+                      await asyncio.sleep(delay)
 
               # isi nomor
               log_debug(f"📝 Mengisi nomor: {msisdn}")
@@ -195,18 +218,39 @@ jobs:
               # Screenshot setelah klik
               await page.screenshot(path="debug_after_click.png")
 
-              # tunggu hasil
+              # tunggu hasil dengan memperhatikan pesan loading
               log_debug("⏳ Menunggu hasil pengecekan...")
               try:
+                  # Tunggu sampai pesan loading muncul
                   await page.wait_for_function(
                       """() => {
                           const el = document.querySelector("pre.message");
-                          if (!el) return false;
-                          const txt = el.innerText;
-                          return txt.includes("Operator") || txt.includes("ERROR");
+                          return el && (
+                              el.innerText.includes("tunggu") || 
+                              el.innerText.includes("Operator") || 
+                              el.innerText.includes("ERROR")
+                          );
                       }""",
                       timeout=15000
                   )
+                  
+                  # Jika muncul pesan "tunggu", wait sampai ada hasil
+                  loading_text = await page.inner_text("pre.message")
+                  if "tunggu" in loading_text.lower():
+                      log_debug("⏳ Terdeteksi pesan loading, menunggu hasil...")
+                      
+                      # Wait for the actual result
+                      await page.wait_for_function(
+                          """() => {
+                              const el = document.querySelector("pre.message");
+                              if (!el) return false;
+                              const txt = el.innerText;
+                              return txt.includes("Operator") || txt.includes("ERROR");
+                          }""",
+                          timeout=30000  # Longer timeout for actual result
+                      )
+                  
+                  # Get final result
                   text = await page.inner_text("pre.message")
                   log_debug("✅ Hasil ditemukan")
                   log_debug(f"📄 Raw response:\n{text}")
@@ -248,6 +292,7 @@ jobs:
                       # Configure browser with necessary flags for CI environment
                       browser = await p.chromium.launch(
                           headless=headless,
+                          ignore_https_errors=True,  # Ignore SSL errors
                           args=[
                               '--no-sandbox',
                               '--disable-setuid-sandbox',
@@ -256,7 +301,9 @@ jobs:
                               '--no-first-run',
                               '--no-zygote',
                               '--single-process',
-                              '--disable-extensions'
+                              '--disable-extensions',
+                              '--disable-web-security',
+                              '--disable-features=IsolateOrigins,site-per-process'
                           ]
                       )
                       
