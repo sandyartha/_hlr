@@ -23,227 +23,23 @@ on:
 jobs:
   debug:
     runs-on: ubuntu-latest
-    env:
-      CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
-      CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
     steps:
       - uses: actions/checkout@v3
-
-      - name: Get Runner IP
-        id: ip
-        run: |
-          IP=$(curl -s https://ipinfo.io/ip)
-          echo "IP=$IP" >> $GITHUB_OUTPUT
-          echo "Runner IP: $IP"
-
-      - name: Whitelist IP in Cloudflare
-        id: whitelist
-        run: |
-          echo "Adding IP to Cloudflare whitelist..."
-          RESPONSE=$(curl --request POST \
-            --url "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/firewall/access_rules/rules" \
-            --header "Content-Type: application/json" \
-            --header "Authorization: Bearer $CF_API_TOKEN" \
-            --data "{\"mode\":\"whitelist\",\"configuration\":{\"target\":\"ip\",\"value\":\"${{ steps.ip.outputs.IP }}\"},\"notes\":\"Github Action Runner\"}")
-
-          echo "Response: $RESPONSE"
-          RULE_ID=$(echo $RESPONSE | jq -r '.result.id')
-          echo "rule_id=$RULE_ID" >> $GITHUB_OUTPUT
-
-          # Wait for rule to be active
-          echo "Waiting for rule to be active..."
-          sleep 10
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
 
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y software-properties-common
-          sudo add-apt-repository universe
-          sudo apt-get update
-          sudo apt-get install -y \
-            libnss3 \
-            libnspr4 \
-            libatk1.0-0 \
-            libatk-bridge2.0-0 \
-            libcups2 \
-            libdrm2 \
-            libxkbcommon0 \
-            libxcomposite1 \
-            libxdamage1 \
-            libxfixes3 \
-            libxrandr2 \
-            libgbm1 \
-            libpulse0 \
-            libwayland-client0 \
-            libwayland-cursor0 \
-            libwayland-egl1 \
-            libwayland-server0 \
-            libx11-xcb1 \
-            libxcb-dri3-0 \
-            libxcb-icccm4 \
-            libxcb-image0 \
-            libxcb-keysyms1 \
-            libxcb-randr0 \
-            libxcb-render-util0 \
-            libxcb-shape0 \
-            libxcb-util1 \
-            libxcb-xfixes0 \
-            libxcb-xinerama0 \
-            libxcb-xkb1 \
-            libxkbcommon-x11-0 \
-            xvfb
-
-      - name: Install Python dependencies
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install botasaurus
-          pip install selenium webdriver_manager
-          playwright install chromium
-
-      - name: Verify browser installation
-        run: |
-          python -c "
-          from playwright.sync_api import sync_playwright
-          with sync_playwright() as p:
-              browser = p.chromium.launch()
-              browser.close()
-          print('✅ Playwright verification successful')
-          "
-
-      - name: Create debug configuration
-        run: |
-          echo "DEBUG=true" >> .env
-          echo "TEST_NUMBER=${{ github.event.inputs.test_number }}" >> .env
-          echo "HEADLESS=${{ github.event.inputs.headless }}" >> .env
-
-      - name: Modify debug script for CI
-        run: |
-          cat > scripts/checker_debug_ci.py << 'EOF'
-          from botasaurus import *
+          pip install playwright undetected-playwright
+          playwright install chromium firefox --with-deps
+          import asyncio
+          from undetected_playwright.async_api import async_playwright
           import time
-          import os
-
-          @browser(
-              block_images=False,
-              block_resources=False,
-              headless=True,
-              proxy=None,
-              user_agent=None
-          )
-          def scrape_hlr(bt: BrowserAction):
-              print("Starting HLR scraping with Botasaurus...")
-              
-              try:
-                  # Navigate to the page
-                  print("Navigating to page...")
-                  bt.get("https://ceebydith.com/cek-hlr-lokasi-hp.html")
-                  
-                  # Wait for page to load completely
-                  print("Waiting for page load...")
-                  bt.sleep(5)
-                  
-                  # Get page info
-                  title = bt.get_title()
-                  print(f"Page title: {title}")
-                  
-                  # Save page content for debugging
-                  content = bt.get_page_source()
-                  print(f"Page content length: {len(content)} bytes")
-                  print("Saving page content...")
-                  
-                  with open("debug.html", "w", encoding="utf-8") as f:
-                      f.write(content)
-                  
-                  # Take screenshot
-                  bt.screenshot("debug_screenshot.png")
-                  
-                  return {
-                      "title": title,
-                      "url": bt.get_current_url(),
-                      "success": "Just a moment" not in title
-                  }
-                  
-              except Exception as e:
-                  print(f"Error during scraping: {str(e)}")
-                  return {
-                      "error": str(e),
-                      "success": False
-                  }
-
-          if __name__ == "__main__":
-              # Configure logging
-              import logging
-              logging.basicConfig(
-                  level=logging.INFO,
-                  format='%(asctime)s - %(levelname)s - %(message)s'
-              )
-              
-              # Run the scraper
-              results = scrape_hlr()
-              
-              # Check results
-              if results.get("success"):
-                  print("Scraping completed successfully!")
-                  print(f"Title: {results.get('title')}")
-                  print(f"URL: {results.get('url')}")
-              else:
-                  print("Scraping failed!")
-                  if "error" in results:
-                      print(f"Error: {results['error']}")
-                  exit(1)
-                  
-                  # Coba beberapa kali jika gagal
-                  max_retries = 3
-                  for attempt in range(max_retries):
-                      try:
-                          print(f"Attempt {attempt + 1}/{max_retries}")
-                          
-                          # GET request untuk mendapatkan challenge
-                          response = scraper.get(
-                              "https://ceebydith.com/cek-hlr-lokasi-hp.html",
-                              timeout=30
-                          )
-                          
-                          print(f"Status code: {response.status_code}")
-                          print(f"CF-RAY header: {response.headers.get('CF-RAY', 'Not found')}")
-                          
-                          if response.status_code == 200:
-                              cookies = scraper.cookies.get_dict()
-                              if cookies:
-                                  print("Cookies berhasil didapat!")
-                                  print(f"Cookie names: {list(cookies.keys())}")
-                                  return cookies
-                              else:
-                                  print("Response 200 tapi tidak ada cookies")
-                          else:
-                              print(f"Response tidak 200: {response.status_code}")
-                              print(f"Response headers: {dict(response.headers)}")
-                      
-                      except cloudscraper.exceptions.CloudflareChallengeError as e:
-                          print(f"Cloudflare challenge error: {str(e)}")
-                          if attempt < max_retries - 1:
-                              print("Menunggu sebelum mencoba lagi...")
-                              time.sleep(5)
-                          continue
-                          
-                      except Exception as e:
-                          print(f"Error tidak terduga: {str(e)}")
-                          if attempt < max_retries - 1:
-                              time.sleep(5)
-                          continue
-                  
-                  print("Semua percobaan gagal")
-                  return {}
-                      
-              except Exception as e:
-                  print(f"Error fatal: {str(e)}")
-                  return {}
 
           async def scrape_basic_info():
               """Scrape title dan description dari halaman web"""
@@ -258,96 +54,26 @@ jobs:
                           ]
                       )
                       
-                      # Buat context dengan default settings
+                      # Buat context dan page
                       context = await browser.new_context(viewport={'width': 1920, 'height': 1080})
                       page = await context.new_page()
                       
-                      # Simulate human-like behavior before navigation
-                      random_delay()
-                      
                       print("Membuka halaman...")
-                      try:
-                          # Emulate human-like navigation
-                          await page.evaluate("""
-                              // Override navigator properties
-                              Object.defineProperty(navigator, 'webdriver', { get: () => false });
-                              Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
-                              
-                              // Add random mouse movements
-                              const moveMouseRandomly = () => {
-                                  const x = Math.floor(Math.random() * window.innerWidth);
-                                  const y = Math.floor(Math.random() * window.innerHeight);
-                                  const event = new MouseEvent('mousemove', {
-                                      view: window,
-                                      bubbles: true,
-                                      cancelable: true,
-                                      clientX: x,
-                                      clientY: y
-                                  });
-                                  document.dispatchEvent(event);
-                              };
-                              setInterval(moveMouseRandomly, 1000);
-                          """)
-                          
-                          print("Mencoba mengakses halaman...")
-                          await page.goto("https://ceebydith.com/cek-hlr-lokasi-hp.html", 
-                                        wait_until="domcontentloaded",
-                                        timeout=60000)
-                      except Exception as e:
-                          print(f"Initial navigation error: {str(e)}")
-                          print("Mencoba recovery mode...")
-                          # Try alternative approach
-                          await page.goto("https://ceebydith.com/cek-hlr-lokasi-hp.html", 
-                                        wait_until="commit",
-                                        timeout=30000)
+                      await page.goto("https://ceebydith.com/cek-hlr-lokasi-hp.html", timeout=60000)
                       
-                      # Tunggu sampai challenge selesai
                       print("Menunggu halaman selesai loading...")
-                      try:
-                          print("Menunggu networkidle state...")
-                          await page.wait_for_load_state("networkidle", timeout=30000)
-                      except Exception as e:
-                          print(f"Network idle timeout: {str(e)}")
-                          
-                      print("Menunggu tambahan 10 detik...")
-                      await page.wait_for_timeout(10000)  # Increased wait time
+                      await page.wait_for_load_state("networkidle", timeout=30000)
                       
                       # Get page title
                       title = await page.title()
                       print(f"Title: {title}")
                       
-                      max_retries = 5
-                      retry_count = 0
-                      
-                      while "Just a moment" in title and retry_count < max_retries:
-                          print(f"Terdeteksi Cloudflare challenge, menunggu... (attempt {retry_count + 1}/{max_retries})")
-                          
-                          try:
-                              # Coba klik checkbox jika ada
-                              checkbox = await page.query_selector("#challenge-stage")
-                              if checkbox:
-                                  await checkbox.click()
-                          except Exception as e:
-                              print(f"No clickable challenge element found: {str(e)}")
-                          
-                          # Tunggu lebih lama
-                          await page.wait_for_timeout(15000)
-                          
-                          # Cek apakah ada perubahan konten
-                          old_content = await page.content()
-                          await page.wait_for_timeout(5000)
-                          new_content = await page.content()
-                          
-                          if old_content != new_content:
-                              print("Halaman berubah, menunggu selesai...")
-                              await page.wait_for_timeout(10000)
-                          
+                      # Handle Cloudflare if needed
+                      if "Just a moment" in title:
+                          print("Terdeteksi Cloudflare challenge, menunggu...")
+                          await asyncio.sleep(10)
                           title = await page.title()
                           print(f"Title setelah menunggu: {title}")
-                          retry_count += 1
-                      
-                      if "Just a moment" in title:
-                          print("Gagal melewati Cloudflare challenge setelah beberapa percobaan")
                       
                       # Get meta description
                       description = await page.evaluate("""() => {
@@ -363,30 +89,19 @@ jobs:
                       with open("debug.html", "w", encoding="utf-8") as f:
                           f.write(content)
                       
+                      # Take screenshot
+                      await page.screenshot(path="debug_screenshot.png")
+                      
                       await context.close()
                       await browser.close()
               except Exception as e:
                   print(f"Error: {str(e)}")
                   raise e
-              
-          if __name__ == "__main__":
-              asyncio.run(scrape_basic_info())
-          EOF
 
       - name: Run debug test
         run: python scripts/checker_debug_ci.py
 
-      - name: Remove IP from Cloudflare whitelist
-        if: always()
-        run: |
-          if [ ! -z "${{ steps.whitelist.outputs.rule_id }}" ]; then
-            echo "Removing IP from whitelist..."
-            curl --request DELETE \
-              --url "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/firewall/access_rules/rules/${{ steps.whitelist.outputs.rule_id }}" \
-              --header "Authorization: Bearer $CF_API_TOKEN"
-          fi
-
-      - name: Upload debug artifacts
+      - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
