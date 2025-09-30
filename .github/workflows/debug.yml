@@ -74,8 +74,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install requests cloudscraper
+          pip install requests cloudscraper requests_toolbelt undetected-playwright
           playwright install chromium firefox --with-deps
+
+          # Install stealth plugin
+          mkdir -p ~/.cache/ms-playwright/firefox/stealth
+          curl -o ~/.cache/ms-playwright/firefox/stealth/stealth.min.js https://raw.githubusercontent.com/berstend/puppeteer-extra/master/packages/puppeteer-extra-plugin-stealth/evasions/_generated/stealth.min.js
 
       - name: Verify Playwright installation
         run: |
@@ -99,41 +103,86 @@ jobs:
           import asyncio
           import cloudscraper
           import json
+          import random
+          import time
           from playwright.async_api import async_playwright
+          from requests_toolbelt.adapters import source
+
+          def random_delay():
+              """Add random delay untuk simulasi human behavior"""
+              time.sleep(random.uniform(2, 5))
+
+          def get_random_ip():
+              """Generate random IP untuk X-Forwarded-For"""
+              return f"{random.randint(1,255)}.{random.randint(1,255)}.{random.randint(1,255)}.{random.randint(1,255)}"
 
           def get_cf_cookies():
               """Get cookies dari Cloudflare menggunakan cloudscraper"""
               try:
-                  # Set user agent Firefox
-                  firefox_ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/117.0'
+                  # Konfigurasi interpreter untuk bypass Cloudflare
+                  interpreter = {
+                      "navigator.user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/117.0"
+                  }
+
+                  # Buat scraper dengan konfigurasi yang direkomendasikan
                   scraper = cloudscraper.create_scraper(
+                      interpreter=interpreter,
                       browser={
                           'browser': 'firefox',
                           'platform': 'windows',
                           'mobile': False
                       },
+                      delay=10,  # Delay antara request
                       debug=True
                   )
-                  scraper.headers.update({'User-Agent': firefox_ua})
-                  
+
                   print("Mencoba mendapatkan cookies dengan cloudscraper...")
-                  response = scraper.get(
-                      "https://ceebydith.com/cek-hlr-lokasi-hp.html",
-                      timeout=30
-                  )
-                  print(f"Status code: {response.status_code}")
                   
-                  if response.status_code == 200:
-                      cookies = scraper.cookies.get_dict()
-                      print("Cookies berhasil didapat!")
-                      return cookies
-                  else:
-                      print(f"Gagal mendapatkan cookies. Status: {response.status_code}")
-                      print(f"Response: {response.text[:500]}...")
-                      return {}
+                  # Coba beberapa kali jika gagal
+                  max_retries = 3
+                  for attempt in range(max_retries):
+                      try:
+                          print(f"Attempt {attempt + 1}/{max_retries}")
+                          
+                          # GET request untuk mendapatkan challenge
+                          response = scraper.get(
+                              "https://ceebydith.com/cek-hlr-lokasi-hp.html",
+                              timeout=30
+                          )
+                          
+                          print(f"Status code: {response.status_code}")
+                          print(f"CF-RAY header: {response.headers.get('CF-RAY', 'Not found')}")
+                          
+                          if response.status_code == 200:
+                              cookies = scraper.cookies.get_dict()
+                              if cookies:
+                                  print("Cookies berhasil didapat!")
+                                  print(f"Cookie names: {list(cookies.keys())}")
+                                  return cookies
+                              else:
+                                  print("Response 200 tapi tidak ada cookies")
+                          else:
+                              print(f"Response tidak 200: {response.status_code}")
+                              print(f"Response headers: {dict(response.headers)}")
+                      
+                      except cloudscraper.exceptions.CloudflareChallengeError as e:
+                          print(f"Cloudflare challenge error: {str(e)}")
+                          if attempt < max_retries - 1:
+                              print("Menunggu sebelum mencoba lagi...")
+                              time.sleep(5)
+                          continue
+                          
+                      except Exception as e:
+                          print(f"Error tidak terduga: {str(e)}")
+                          if attempt < max_retries - 1:
+                              time.sleep(5)
+                          continue
+                  
+                  print("Semua percobaan gagal")
+                  return {}
                       
               except Exception as e:
-                  print(f"Error saat mendapatkan cookies: {str(e)}")
+                  print(f"Error fatal: {str(e)}")
                   return {}
 
           async def scrape_basic_info():
@@ -147,18 +196,29 @@ jobs:
                   print(f"Cookies didapat: {json.dumps(cf_cookies, indent=2)}")
               try:
                   async with async_playwright() as p:
-                      print("Launching Firefox...")
+                      print("Launching Firefox with stealth mode...")
                       browser = await p.firefox.launch(
-                          headless=True,  # Back to headless for CI
+                          headless=True,
                           firefox_user_prefs={
-                              # Disable various Firefox features that might trigger detection
+                              # Enhanced privacy settings
+                              'privacy.resistFingerprinting': True,
+                              'privacy.trackingprotection.enabled': True,
+                              'network.http.sendRefererHeader': 0,
                               'media.navigator.enabled': False,
                               'media.peerconnection.enabled': False,
-                              'privacy.resistFingerprinting': False,
                               'dom.webaudio.enabled': False,
-                              'dom.webnotifications.enabled': False
+                              'dom.webnotifications.enabled': False,
+                              'beacon.enabled': False,
+                              'javascript.enabled': True,
+                              'dom.webdriver.enabled': False,
+                              'useAutomationExtension': False,
+                              'plugins.emulated': False
                           }
                       )
+                      
+                      # Load stealth script
+                      with open('~/.cache/ms-playwright/firefox/stealth/stealth.min.js', 'r') as f:
+                          stealth_js = f.read()
                       
                       # Buat context dengan user agent Firefox
                       context = await browser.new_context(
@@ -181,25 +241,50 @@ jobs:
                               'path': '/'
                           }])
                       
-                      # Set extra headers
+                      # Inject stealth script
+                      await page.add_init_script(stealth_js)
+                      
+                      # Set more realistic headers
+                      random_delay()  # Simulate human delay
                       await page.set_extra_http_headers({
-                          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+                          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
                           'Accept-Language': 'en-US,en;q=0.9',
-                          'Accept-Encoding': 'gzip, deflate, br',
+                          'Accept-Encoding': 'gzip, deflate',
                           'Connection': 'keep-alive',
+                          'Cache-Control': 'max-age=0',
+                          'DNT': '1',
                           'Upgrade-Insecure-Requests': '1',
-                          'Sec-Fetch-Dest': 'document',
-                          'Sec-Fetch-Mode': 'navigate',
-                          'Sec-Fetch-Site': 'none',
-                          'Sec-Fetch-User': '?1',
-                          'sec-ch-ua': '"Google Chrome";v="117", "Not;A=Brand";v="8", "Chromium";v="117"',
-                          'sec-ch-ua-mobile': '?0',
-                          'sec-ch-ua-platform': '"Windows"'
+                          'X-Forwarded-For': get_random_ip(),
+                          'X-Real-IP': get_random_ip()
                       })
+                      
+                      # Simulate human-like behavior before navigation
+                      random_delay()
                       
                       print("Membuka halaman...")
                       try:
-                          # Navigate dengan timeout normal karena non-headless
+                          # Emulate human-like navigation
+                          await page.evaluate("""
+                              // Override navigator properties
+                              Object.defineProperty(navigator, 'webdriver', { get: () => false });
+                              Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
+                              
+                              // Add random mouse movements
+                              const moveMouseRandomly = () => {
+                                  const x = Math.floor(Math.random() * window.innerWidth);
+                                  const y = Math.floor(Math.random() * window.innerHeight);
+                                  const event = new MouseEvent('mousemove', {
+                                      view: window,
+                                      bubbles: true,
+                                      cancelable: true,
+                                      clientX: x,
+                                      clientY: y
+                                  });
+                                  document.dispatchEvent(event);
+                              };
+                              setInterval(moveMouseRandomly, 1000);
+                          """)
+                          
                           print("Mencoba mengakses halaman...")
                           await page.goto("https://ceebydith.com/cek-hlr-lokasi-hp.html", 
                                         wait_until="domcontentloaded",
@@ -295,6 +380,7 @@ jobs:
         with:
           name: debug-artifacts
           path: |
-            debug_*.png
-            debug_*.txt
+            *.html
+            *.png
+            *.txt
           retention-days: 7
