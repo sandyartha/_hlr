@@ -23,8 +23,36 @@ on:
 jobs:
   debug:
     runs-on: ubuntu-latest
+    env:
+      CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
+      CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
     steps:
       - uses: actions/checkout@v3
+
+      - name: Get Runner IP
+        id: ip
+        run: |
+          IP=$(curl -s https://ipinfo.io/ip)
+          echo "IP=$IP" >> $GITHUB_OUTPUT
+          echo "Runner IP: $IP"
+
+      - name: Whitelist IP in Cloudflare
+        id: whitelist
+        run: |
+          echo "Adding IP to Cloudflare whitelist..."
+          RESPONSE=$(curl --request POST \
+            --url "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/firewall/access_rules/rules" \
+            --header "Content-Type: application/json" \
+            --header "Authorization: Bearer $CF_API_TOKEN" \
+            --data "{\"mode\":\"whitelist\",\"configuration\":{\"target\":\"ip\",\"value\":\"${{ steps.ip.outputs.IP }}\"},\"notes\":\"Github Action Runner\"}")
+
+          echo "Response: $RESPONSE"
+          RULE_ID=$(echo $RESPONSE | jq -r '.result.id')
+          echo "rule_id=$RULE_ID" >> $GITHUB_OUTPUT
+
+          # Wait for rule to be active
+          echo "Waiting for rule to be active..."
+          sleep 10
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -74,8 +102,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install undetected-playwright
-          playwright install firefox chromium --with-deps      - name: Verify Playwright installation
+          pip install botasaurus
+          python -m botasaurus install-dependencies
+
+      - name: Verify Playwright installation
         run: |
           python -c "
           from playwright.sync_api import sync_playwright
@@ -94,15 +124,78 @@ jobs:
       - name: Modify debug script for CI
         run: |
           cat > scripts/checker_debug_ci.py << 'EOF'
-          import asyncio
-          from undetected_playwright.async_api import async_playwright
+          from botasaurus import *
           import time
+          import os
 
-          def sleep(seconds):
-              """Sleep helper untuk async code"""
-              return asyncio.sleep(seconds)
+          @browser(
+              block_images=False,
+              block_resources=False,
+              headless=True,
+              proxy=None,
+              user_agent=None
+          )
+          def scrape_hlr(bt: BrowserAction):
+              print("Starting HLR scraping with Botasaurus...")
+              
+              try:
+                  # Navigate to the page
+                  print("Navigating to page...")
+                  bt.get("https://ceebydith.com/cek-hlr-lokasi-hp.html")
+                  
+                  # Wait for page to load completely
+                  print("Waiting for page load...")
+                  bt.sleep(5)
+                  
+                  # Get page info
+                  title = bt.get_title()
+                  print(f"Page title: {title}")
+                  
+                  # Save page content for debugging
+                  content = bt.get_page_source()
+                  print(f"Page content length: {len(content)} bytes")
+                  print("Saving page content...")
+                  
+                  with open("debug.html", "w", encoding="utf-8") as f:
+                      f.write(content)
+                  
+                  # Take screenshot
+                  bt.screenshot("debug_screenshot.png")
+                  
+                  return {
+                      "title": title,
+                      "url": bt.get_current_url(),
+                      "success": "Just a moment" not in title
+                  }
+                  
+              except Exception as e:
+                  print(f"Error during scraping: {str(e)}")
+                  return {
+                      "error": str(e),
+                      "success": False
+                  }
 
-                  print("Mencoba mendapatkan cookies dengan cloudscraper...")
+          if __name__ == "__main__":
+              # Configure logging
+              import logging
+              logging.basicConfig(
+                  level=logging.INFO,
+                  format='%(asctime)s - %(levelname)s - %(message)s'
+              )
+              
+              # Run the scraper
+              results = scrape_hlr()
+              
+              # Check results
+              if results.get("success"):
+                  print("Scraping completed successfully!")
+                  print(f"Title: {results.get('title')}")
+                  print(f"URL: {results.get('url')}")
+              else:
+                  print("Scraping failed!")
+                  if "error" in results:
+                      print(f"Error: {results['error']}")
+                  exit(1)
                   
                   # Coba beberapa kali jika gagal
                   max_retries = 3
@@ -280,9 +373,17 @@ jobs:
           EOF
 
       - name: Run debug test
+        run: python scripts/checker_debug_ci.py
+
+      - name: Remove IP from Cloudflare whitelist
+        if: always()
         run: |
-          export NODE_TLS_REJECT_UNAUTHORIZED=0  # Allow self-signed certificates for testing
-          python scripts/checker_debug_ci.py
+          if [ ! -z "${{ steps.whitelist.outputs.rule_id }}" ]; then
+            echo "Removing IP from whitelist..."
+            curl --request DELETE \
+              --url "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/firewall/access_rules/rules/${{ steps.whitelist.outputs.rule_id }}" \
+              --header "Authorization: Bearer $CF_API_TOKEN"
+          fi
 
       - name: Upload debug artifacts
         if: always()
