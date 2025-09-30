@@ -96,17 +96,15 @@ jobs:
               """Scrape title dan description dari halaman web"""
               try:
                   async with async_playwright() as p:
-                      # Launch browser dengan konfigurasi anti-detection
-                      browser = await p.chromium.launch(
+                      # Launch Firefox instead of Chromium
+                      browser = await p.firefox.launch(
                           headless=False,  # Non-headless mode
                           args=[
-                              '--disable-blink-features=AutomationControlled',
-                              '--disable-features=IsolateOrigins,site-per-process',
-                              '--disable-site-isolation-trials',
-                              '--start-maximized',  # Maximize window in non-headless mode
                               '--no-sandbox',
                               '--disable-setuid-sandbox',
-                              '--disable-dev-shm-usage'
+                              '--disable-dev-shm-usage',
+                              '--width=1920',
+                              '--height=1080'
                           ]
                       )
                       
@@ -166,11 +164,38 @@ jobs:
                       title = await page.title()
                       print(f"Title: {title}")
                       
-                      if "Just a moment" in title:
-                          print("Terdeteksi Cloudflare challenge, menunggu...")
-                          await page.wait_for_timeout(10000)  # Tunggu 10 detik lagi
+                      max_retries = 5
+                      retry_count = 0
+                      
+                      while "Just a moment" in title and retry_count < max_retries:
+                          print(f"Terdeteksi Cloudflare challenge, menunggu... (attempt {retry_count + 1}/{max_retries})")
+                          
+                          try:
+                              # Coba klik checkbox jika ada
+                              checkbox = await page.query_selector("#challenge-stage")
+                              if checkbox:
+                                  await checkbox.click()
+                          except Exception as e:
+                              print(f"No clickable challenge element found: {str(e)}")
+                          
+                          # Tunggu lebih lama
+                          await page.wait_for_timeout(15000)
+                          
+                          # Cek apakah ada perubahan konten
+                          old_content = await page.content()
+                          await page.wait_for_timeout(5000)
+                          new_content = await page.content()
+                          
+                          if old_content != new_content:
+                              print("Halaman berubah, menunggu selesai...")
+                              await page.wait_for_timeout(10000)
+                          
                           title = await page.title()
                           print(f"Title setelah menunggu: {title}")
+                          retry_count += 1
+                      
+                      if "Just a moment" in title:
+                          print("Gagal melewati Cloudflare challenge setelah beberapa percobaan")
                       
                       # Get meta description
                       description = await page.evaluate("""() => {
