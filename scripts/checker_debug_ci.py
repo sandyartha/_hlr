@@ -4,8 +4,10 @@ import os
 import random
 import logging
 
-def random_delay():
-    time.sleep(random.uniform(1, 3))
+def random_delay(min_seconds=1, max_seconds=3):
+    delay = random.uniform(min_seconds, max_seconds)
+    print(f"Waiting for {delay:.2f} seconds...")
+    time.sleep(delay)
 
 def scrape_hlr():
     print("Starting HLR scraping with Playwright...")
@@ -17,7 +19,13 @@ def scrape_hlr():
                 headless=True,
                 args=[
                     '--disable-blink-features=AutomationControlled',
-                    '--disable-blink-features=AutomationControlledFeatures'
+                    '--disable-blink-features=AutomationControlledFeatures',
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage',
+                    '--disable-accelerated-2d-canvas',
+                    '--disable-gpu',
+                    '--window-size=1920,1080'
                 ]
             )
             
@@ -53,20 +61,45 @@ def scrape_hlr():
                 except Exception as timeout_error:
                     print("Warning: Timeout while waiting for some elements, continuing anyway...")
                     
-                # Handle Cloudflare if needed
+                # Handle Cloudflare and title extraction with better error handling
                 max_retries = 5
                 retry_count = 0
+                title = None
                 
                 while retry_count < max_retries:
-                    title = page.title()
-                    print(f"Page title: {title}")
-                    
-                    if "Just a moment" not in title:
-                        break
+                    try:
+                        # Try multiple methods to get the title
+                        title = page.evaluate('() => document.title')
+                        print(f"Title from evaluate: {title}")
                         
-                    print(f"Cloudflare detected, waiting... (attempt {retry_count + 1}/{max_retries})")
-                    random_delay()
+                        if not title:
+                            title = page.evaluate('() => document.querySelector("title")?.textContent')
+                            print(f"Title from querySelector: {title}")
+                            
+                        if not title:
+                            h1_text = page.evaluate('() => document.querySelector("h1")?.textContent')
+                            print(f"H1 text found: {h1_text}")
+                            title = h1_text if h1_text else "Unknown Title"
+                            
+                        print(f"Final page title: {title}")
+                        
+                        if title and "Just a moment" not in title:
+                            break
+                            
+                        # Check for Cloudflare
+                        cloudflare_elements = page.query_selector_all('text="Checking if the site connection is secure"')
+                        if len(cloudflare_elements) > 0:
+                            print(f"Cloudflare challenge detected (attempt {retry_count + 1}/{max_retries})")
+                            random_delay()
+                            page.reload()
+                        else:
+                            break
+                            
+                    except Exception as e:
+                        print(f"Error getting title (attempt {retry_count + 1}): {str(e)}")
+                        
                     retry_count += 1
+                    random_delay()
                 
                 # Save debugging info
                 content = page.content()
