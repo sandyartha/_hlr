@@ -103,9 +103,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install botasaurus
-          python -m botasaurus install-dependencies
+          pip install selenium webdriver_manager
+          playwright install chromium
 
-      - name: Verify Playwright installation
+      - name: Verify browser installation
         run: |
           python -c "
           from playwright.sync_api import sync_playwright
