@@ -12,6 +12,9 @@ def random_delay(min_seconds=1, max_seconds=3):
 def scrape_hlr():
     print("Starting HLR scraping with Playwright...")
     
+    # Set a custom user agent
+    user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36'
+    
     try:
         with sync_playwright() as p:
             print("Launching browser...")
@@ -31,12 +34,21 @@ def scrape_hlr():
             
             context = browser.new_context(
                 viewport={'width': 1920, 'height': 1080},
+                user_agent=user_agent,
                 java_script_enabled=True,
                 ignore_https_errors=True,
                 extra_http_headers={
-                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-                    'Accept-Language': 'en-US,en;q=0.5',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+                    'Accept-Language': 'en-US,en;q=0.9',
+                    'Accept-Encoding': 'gzip, deflate, br',
                     'Upgrade-Insecure-Requests': '1',
+                    'Sec-Ch-Ua': '"Chromium";v="116", "Not)A;Brand";v="24", "Google Chrome";v="116"',
+                    'Sec-Ch-Ua-Mobile': '?0',
+                    'Sec-Ch-Ua-Platform': '"Windows"',
+                    'Sec-Fetch-Dest': 'document',
+                    'Sec-Fetch-Mode': 'navigate',
+                    'Sec-Fetch-Site': 'none',
+                    'Sec-Fetch-User': '?1'
                 }
             )
             
@@ -62,44 +74,65 @@ def scrape_hlr():
                     print("Warning: Timeout while waiting for some elements, continuing anyway...")
                     
                 # Handle Cloudflare and title extraction with better error handling
-                max_retries = 5
+                max_retries = 8  # Increased retries
                 retry_count = 0
                 title = None
                 
                 while retry_count < max_retries:
                     try:
-                        # Try multiple methods to get the title
-                        title = page.evaluate('() => document.title')
-                        print(f"Title from evaluate: {title}")
+                        print(f"\nAttempt {retry_count + 1}/{max_retries} to bypass Cloudflare...")
                         
-                        if not title:
-                            title = page.evaluate('() => document.querySelector("title")?.textContent')
-                            print(f"Title from querySelector: {title}")
+                        # Wait for Cloudflare challenge to complete
+                        try:
+                            # First check if we're on Cloudflare page
+                            if page.query_selector('div[class*="cf-"]') is not None:
+                                print("Detected Cloudflare challenge page, waiting for completion...")
+                                # Wait longer for the first attempt
+                                wait_time = 20 if retry_count == 0 else 10
+                                random_delay(wait_time, wait_time + 5)
+                                
+                                # Wait for the main content to appear
+                                page.wait_for_selector('.content-wrapper', timeout=30000)
+                            else:
+                                print("No Cloudflare challenge detected")
+                        except Exception as cf_error:
+                            print(f"Error during Cloudflare check: {str(cf_error)}")
+                        
+                        # Try multiple methods to get the title
+                        try:
+                            title = page.evaluate('() => document.title')
+                            print(f"Title from evaluate: {title}")
+                        except:
+                            print("Failed to get title via evaluate")
                             
-                        if not title:
-                            h1_text = page.evaluate('() => document.querySelector("h1")?.textContent')
-                            print(f"H1 text found: {h1_text}")
-                            title = h1_text if h1_text else "Unknown Title"
+                        if not title or "Just a moment" in title:
+                            try:
+                                # Try to find the main content heading
+                                heading = page.evaluate('''() => {
+                                    const h1 = document.querySelector('.content-header h1');
+                                    return h1 ? h1.textContent : null;
+                                }''')
+                                if heading:
+                                    title = heading
+                                    print(f"Got title from heading: {title}")
+                            except:
+                                print("Failed to get heading")
                             
-                        print(f"Final page title: {title}")
+                        print(f"Current page title: {title}")
                         
                         if title and "Just a moment" not in title:
+                            print("Successfully bypassed Cloudflare!")
                             break
                             
-                        # Check for Cloudflare
-                        cloudflare_elements = page.query_selector_all('text="Checking if the site connection is secure"')
-                        if len(cloudflare_elements) > 0:
-                            print(f"Cloudflare challenge detected (attempt {retry_count + 1}/{max_retries})")
-                            random_delay()
-                            page.reload()
-                        else:
-                            break
+                        # If still on Cloudflare page, try reloading
+                        print("Still on Cloudflare page, reloading...")
+                        page.reload()
+                        random_delay(5, 8)  # Longer delay between reloads
                             
                     except Exception as e:
-                        print(f"Error getting title (attempt {retry_count + 1}): {str(e)}")
+                        print(f"Error during attempt {retry_count + 1}: {str(e)}")
                         
                     retry_count += 1
-                    random_delay()
                 
                 # Save debugging info
                 content = page.content()
