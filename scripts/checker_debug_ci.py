@@ -21,18 +21,38 @@ def scrape_hlr():
                 ]
             )
             
-            context = browser.new_context(viewport={'width': 1920, 'height': 1080})
+            context = browser.new_context(
+                viewport={'width': 1920, 'height': 1080},
+                java_script_enabled=True,
+                ignore_https_errors=True,
+                extra_http_headers={
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                    'Accept-Language': 'en-US,en;q=0.5',
+                    'Upgrade-Insecure-Requests': '1',
+                }
+            )
+            
+            # Create page with longer default timeout
             page = context.new_page()
+            page.set_default_timeout(60000)  # 60 seconds default timeout
             
             try:
                 # Navigate to the page
                 print("Navigating to page...")
                 page.goto("https://ceebydith.com/cek-hlr-lokasi-hp.html", timeout=60000)
                 
-                # Wait for page to load completely
+                # Wait for key elements to load instead of full network idle
                 print("Waiting for page load...")
-                page.wait_for_load_state("networkidle", timeout=30000)
-                
+                try:
+                    # First wait for basic load state
+                    page.wait_for_load_state("domcontentloaded", timeout=30000)
+                    
+                    # Then wait for specific elements that indicate the page is usable
+                    page.wait_for_selector('.content-wrapper', timeout=30000)
+                    
+                except Exception as timeout_error:
+                    print("Warning: Timeout while waiting for some elements, continuing anyway...")
+                    
                 # Handle Cloudflare if needed
                 max_retries = 5
                 retry_count = 0
