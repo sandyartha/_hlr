@@ -74,14 +74,8 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install requests cloudscraper requests_toolbelt undetected-playwright
-          playwright install chromium firefox --with-deps
-
-          # Install stealth plugin
-          mkdir -p ~/.cache/ms-playwright/firefox/stealth
-          curl -o ~/.cache/ms-playwright/firefox/stealth/stealth.min.js https://raw.githubusercontent.com/berstend/puppeteer-extra/master/packages/puppeteer-extra-plugin-stealth/evasions/_generated/stealth.min.js
-
-      - name: Verify Playwright installation
+          pip install undetected-playwright
+          playwright install firefox chromium --with-deps      - name: Verify Playwright installation
         run: |
           python -c "
           from playwright.sync_api import sync_playwright
@@ -101,40 +95,12 @@ jobs:
         run: |
           cat > scripts/checker_debug_ci.py << 'EOF'
           import asyncio
-          import cloudscraper
-          import json
-          import random
+          from undetected_playwright.async_api import async_playwright
           import time
-          from playwright.async_api import async_playwright
-          from requests_toolbelt.adapters import source
 
-          def random_delay():
-              """Add random delay untuk simulasi human behavior"""
-              time.sleep(random.uniform(2, 5))
-
-          def get_random_ip():
-              """Generate random IP untuk X-Forwarded-For"""
-              return f"{random.randint(1,255)}.{random.randint(1,255)}.{random.randint(1,255)}.{random.randint(1,255)}"
-
-          def get_cf_cookies():
-              """Get cookies dari Cloudflare menggunakan cloudscraper"""
-              try:
-                  # Konfigurasi interpreter untuk bypass Cloudflare
-                  interpreter = {
-                      "navigator.user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/117.0"
-                  }
-
-                  # Buat scraper dengan konfigurasi yang direkomendasikan
-                  scraper = cloudscraper.create_scraper(
-                      interpreter=interpreter,
-                      browser={
-                          'browser': 'firefox',
-                          'platform': 'windows',
-                          'mobile': False
-                      },
-                      delay=10,  # Delay antara request
-                      debug=True
-                  )
+          def sleep(seconds):
+              """Sleep helper untuk async code"""
+              return asyncio.sleep(seconds)
 
                   print("Mencoba mendapatkan cookies dengan cloudscraper...")
                   
@@ -187,76 +153,20 @@ jobs:
 
           async def scrape_basic_info():
               """Scrape title dan description dari halaman web"""
-              # Get Cloudflare cookies first
-              print("Mendapatkan cookies Cloudflare...")
-              cf_cookies = get_cf_cookies()  # Call sync function
-              if not cf_cookies:
-                  print("Tidak bisa mendapatkan cookies Cloudflare, mencoba tanpa cookies...")
-              else:
-                  print(f"Cookies didapat: {json.dumps(cf_cookies, indent=2)}")
               try:
                   async with async_playwright() as p:
-                      print("Launching Firefox with stealth mode...")
-                      browser = await p.firefox.launch(
+                      print("Launching browser dengan undetected mode...")
+                      browser = await p.chromium.launch(
                           headless=True,
-                          firefox_user_prefs={
-                              # Enhanced privacy settings
-                              'privacy.resistFingerprinting': True,
-                              'privacy.trackingprotection.enabled': True,
-                              'network.http.sendRefererHeader': 0,
-                              'media.navigator.enabled': False,
-                              'media.peerconnection.enabled': False,
-                              'dom.webaudio.enabled': False,
-                              'dom.webnotifications.enabled': False,
-                              'beacon.enabled': False,
-                              'javascript.enabled': True,
-                              'dom.webdriver.enabled': False,
-                              'useAutomationExtension': False,
-                              'plugins.emulated': False
-                          }
+                          args=[
+                              '--disable-blink-features=AutomationControlled',
+                              '--disable-blink-features=AutomationControlledFeatures'
+                          ]
                       )
                       
-                      # Load stealth script
-                      with open('~/.cache/ms-playwright/firefox/stealth/stealth.min.js', 'r') as f:
-                          stealth_js = f.read()
-                      
-                      # Buat context dengan user agent Firefox
-                      context = await browser.new_context(
-                          user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/117.0',
-                          viewport={'width': 1920, 'height': 1080},
-                          java_script_enabled=True,
-                          bypass_csp=True  # Bypass Content Security Policy
-                      )
-                      
-                      # Buat page baru
+                      # Buat context dengan default settings
+                      context = await browser.new_context(viewport={'width': 1920, 'height': 1080})
                       page = await context.new_page()
-                      
-                      # Set cookies dari cloudscraper
-                      print("Setting cookies...")
-                      for name, value in cf_cookies.items():
-                          await context.add_cookies([{
-                              'name': name,
-                              'value': value,
-                              'domain': 'ceebydith.com',
-                              'path': '/'
-                          }])
-                      
-                      # Inject stealth script
-                      await page.add_init_script(stealth_js)
-                      
-                      # Set more realistic headers
-                      random_delay()  # Simulate human delay
-                      await page.set_extra_http_headers({
-                          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
-                          'Accept-Language': 'en-US,en;q=0.9',
-                          'Accept-Encoding': 'gzip, deflate',
-                          'Connection': 'keep-alive',
-                          'Cache-Control': 'max-age=0',
-                          'DNT': '1',
-                          'Upgrade-Insecure-Requests': '1',
-                          'X-Forwarded-For': get_random_ip(),
-                          'X-Real-IP': get_random_ip()
-                      })
                       
                       # Simulate human-like behavior before navigation
                       random_delay()
@@ -380,7 +290,6 @@ jobs:
         with:
           name: debug-artifacts
           path: |
-            *.html
-            *.png
-            *.txt
+            debug.html
+            debug_screenshot.png
           retention-days: 7
