@@ -1,4 +1,4 @@
 pandas
-playwright
-selenium
-webdriver-manager
+botasaurus>=3.0.6
+selenium>=4.11.2
+webdriver-manager>=4.0.1

@@ -1,24 +1,12 @@
-from botasaurus_driver import BotasaurusDriver
+from botasaurus_driver import Driver
 import time
 import random
 import logging
 import os
 
 def setup_driver():
-    """Setup BotasaurusDriver with advanced anti-detection features"""
-    return BotasaurusDriver(
-        headless=True,
-        window_size=(1920, 1080),
-        # Advanced options for better stealth
-        stealth=True,  # Enable stealth mode
-        proxy=None,    # Add proxy if needed
-        cookies_enabled=True,
-        images_enabled=True,
-        # Custom user agent for better detection avoidance
-        custom_user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36",
-        # Language settings
-        language="en-US,en;q=0.9",
-    )
+    """Setup Driver with cloudflare bypass"""
+    return Driver()
 
 def handle_cloudflare(driver, max_wait=60):
     """Handle Cloudflare detection intelligently"""
@@ -80,18 +68,10 @@ def scrape_hlr():
         driver = setup_driver()
         print("Browser initialized with enhanced features")
         
-        # Visit the website with automatic retry
+        # Visit the website with cloudflare bypass
         print("Navigating to page...")
-        driver.get_with_retry(
-            "https://ceebydith.com/cek-hlr-lokasi-hp.html",
-            max_retries=3,
-            retry_delay=5
-        )
-        print("Page loaded")
-        
-        # Handle Cloudflare if present
-        if not handle_cloudflare(driver):
-            raise Exception("Could not bypass Cloudflare protection")
+        driver.google_get("https://ceebydith.com/cek-hlr-lokasi-hp.html", bypass_cloudflare=True)
+        print("Page loaded with Cloudflare bypass")
             
         # Wait for key elements with enhanced retry mechanism
         max_retries = 3
@@ -101,14 +81,8 @@ def scrape_hlr():
             try:
                 print(f"Attempt {attempt + 1}/{max_retries} to find content...")
                 
-                # Enhanced element waiting with multiple selectors
-                selectors = [
-                    "section.content-header h1",
-                    ".content-header h1",
-                    "h1"
-                ]
-                
-                header = driver.find_any(selectors, timeout=20)
+                # Wait for content with auto-retry
+                header = driver.wait_for_selector("section.content-header h1", timeout=20)
                 
                 # Smart scroll with wait
                 driver.scroll_smooth()
