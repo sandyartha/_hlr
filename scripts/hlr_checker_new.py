@@ -1,32 +1,99 @@
-from botasaurus_driver import create_driver, AntiDetectDriver
+from botasaurus_driver import BotasaurusDriver
 import time
 import random
 import logging
 import os
 
-def random_delay(min_seconds=1, max_seconds=3):
-    delay = random.uniform(min_seconds, max_seconds)
-    print(f"Waiting for {delay:.2f} seconds...")
-    time.sleep(delay)
+def setup_driver():
+    """Setup BotasaurusDriver with advanced anti-detection features"""
+    return BotasaurusDriver(
+        headless=True,
+        window_size=(1920, 1080),
+        # Advanced options for better stealth
+        stealth=True,  # Enable stealth mode
+        proxy=None,    # Add proxy if needed
+        cookies_enabled=True,
+        images_enabled=True,
+        # Custom user agent for better detection avoidance
+        custom_user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36",
+        # Language settings
+        language="en-US,en;q=0.9",
+    )
+
+def handle_cloudflare(driver, max_wait=60):
+    """Handle Cloudflare detection intelligently"""
+    print("Checking for Cloudflare...")
+    start_time = time.time()
+    
+    while time.time() - start_time < max_wait:
+        if "Just a moment" in driver.title:
+            print("Detected Cloudflare challenge, waiting...")
+            # Use built-in waits
+            driver.smart_sleep(5)
+            continue
+            
+        if driver.exists("section.content-header"):
+            print("Cloudflare challenge passed!")
+            return True
+            
+    return False
+
+def save_debug_info(driver, prefix="debug"):
+    """Save debug information with enhanced features"""
+    print(f"Saving {prefix} information...")
+    try:
+        os.makedirs("debug", exist_ok=True)
+        
+        # Take full page screenshot
+        screenshot_path = f"debug/{prefix}_screenshot.png"
+        driver.save_full_screenshot(screenshot_path)
+        print(f"Full page screenshot saved to {screenshot_path}")
+        
+        # Save page source with formatting
+        html_path = f"debug/{prefix}.html"
+        with open(html_path, "w", encoding="utf-8") as f:
+            f.write(driver.get_formatted_page_source())
+        print(f"Formatted page source saved to {html_path}")
+        
+        # Save extra debug info
+        debug_info = {
+            "url": driver.current_url,
+            "title": driver.title,
+            "cookies": driver.get_cookies(),
+            "local_storage": driver.get_local_storage(),
+            "session_storage": driver.get_session_storage()
+        }
+        
+        with open(f"debug/{prefix}_info.txt", "w", encoding="utf-8") as f:
+            for key, value in debug_info.items():
+                f.write(f"{key}:\n{value}\n\n")
+        
+    except Exception as e:
+        print(f"Error saving debug info: {str(e)}")
 
 def scrape_hlr():
-    print("Starting HLR scraping with Botasaurus Driver...")
+    print("\nStarting HLR scraping with enhanced Botasaurus Driver...")
     driver = None
     
     try:
-        # Initialize driver with anti-detection
-        driver = create_driver(
-            headless=True,
-            window_size=(1920, 1080)
-        )
-        print("Browser initialized successfully")
+        # Initialize driver with advanced settings
+        driver = setup_driver()
+        print("Browser initialized with enhanced features")
         
-        # Visit the website
+        # Visit the website with automatic retry
         print("Navigating to page...")
-        driver.get("https://ceebydith.com/cek-hlr-lokasi-hp.html")
+        driver.get_with_retry(
+            "https://ceebydith.com/cek-hlr-lokasi-hp.html",
+            max_retries=3,
+            retry_delay=5
+        )
         print("Page loaded")
         
-        # Wait for key elements with retry
+        # Handle Cloudflare if present
+        if not handle_cloudflare(driver):
+            raise Exception("Could not bypass Cloudflare protection")
+            
+        # Wait for key elements with enhanced retry mechanism
         max_retries = 3
         title = None
         
@@ -34,66 +101,53 @@ def scrape_hlr():
             try:
                 print(f"Attempt {attempt + 1}/{max_retries} to find content...")
                 
-                # Wait for content to be visible
-                header = driver.wait_for_presence("section.content-header h1", timeout=20)
+                # Enhanced element waiting with multiple selectors
+                selectors = [
+                    "section.content-header h1",
+                    ".content-header h1",
+                    "h1"
+                ]
                 
-                # Scroll and wait
-                driver.scroll_to_bottom()
-                random_delay(3, 5)
+                header = driver.find_any(selectors, timeout=20)
                 
-                # Try to get the title
+                # Smart scroll with wait
+                driver.scroll_smooth()
+                driver.smart_sleep(2)
+                
+                # Get title with validation
                 title = header.text
                 if title and "HLR" in title:
                     print(f"Successfully found title: {title}")
                     break
                     
-                print("Title not found yet, waiting...")
-                random_delay(5, 8)
+                print("Title not found yet, retrying...")
+                driver.smart_sleep(3)
                 
             except Exception as e:
                 print(f"Attempt {attempt + 1} failed: {str(e)}")
                 if attempt < max_retries - 1:
-                    random_delay(5, 8)
+                    driver.refresh()
+                    driver.smart_sleep(3)
                     continue
                 raise
         
-        # Create debug directory
-        os.makedirs("debug", exist_ok=True)
-        
-        # Take screenshot for verification
-        print("Taking screenshot...")
-        screenshot_path = "debug/debug_screenshot.png"
-        driver.save_screenshot(screenshot_path)
-        print(f"Screenshot saved to {screenshot_path}")
-        
-        # Save page source
-        print("Saving page source...")
-        html_path = "debug/debug.html"
-        with open(html_path, "w", encoding="utf-8") as f:
-            f.write(driver.page_source)
-        print(f"Page source saved to {html_path}")
+        # Save comprehensive debug info
+        save_debug_info(driver)
         
         return {
             "title": title,
             "url": driver.current_url,
-            "success": True
+            "success": True,
+            "cookies": driver.get_cookies()
         }
         
     except Exception as e:
         print(f"\nError during scraping: {str(e)}")
         
-        # Save debug info even on failure
+        # Save comprehensive error debug info
         if driver:
-            try:
-                os.makedirs("debug", exist_ok=True)
-                print("Taking error screenshot...")
-                driver.save_screenshot("debug/error_screenshot.png")
-                print("Saving error page source...")
-                with open("debug/error.html", "w", encoding="utf-8") as f:
-                    f.write(driver.page_source)
-            except Exception as debug_error:
-                print(f"Could not save debug info: {str(debug_error)}")
-                
+            save_debug_info(driver, "error")
+            
         return {
             "error": str(e),
             "success": False
@@ -123,8 +177,9 @@ if __name__ == "__main__":
         print("\nScraping successful!")
         print(f"Page title: {results.get('title')}")
         print(f"URL: {results.get('url')}")
+        print(f"Cookies captured: {len(results.get('cookies', []))}")
     else:
         print("\nScraping failed!")
         if "error" in results:
             print(f"Error: {results['error']}")
-        print("See debug/debug.html and debug/debug_screenshot.png for more information")
+        print("See debug folder for detailed information")
