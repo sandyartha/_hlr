@@ -146,20 +146,33 @@ def scrape_hlr():
                     print("Attempting to get title after screenshot...")
                     # Try multiple selectors to find the title
                     title_selectors = [
-                        'h1',  # Direct h1
-                        '.content-header h1',  # Content header h1
-                        'title',  # Page title
-                        '.content-wrapper h1', # Content wrapper h1
+                        '.content-header h1',  # Content header h1 first (most specific)
+                        'section.content-header h1',  # More specific content header
+                        'title',  # Page title tag
+                        '.content-wrapper .content-header h1', # Full path
+                        'h1',  # Direct h1 as last resort
                     ]
                     
                     for selector in title_selectors:
                         try:
-                            element = page.query_selector(selector)
-                            if element:
-                                title = element.text_content()
-                                print(f"Found title via selector '{selector}': {title}")
-                                if title and not "Just a moment" in title:
-                                    break
+                            elements = page.query_selector_all(selector)
+                            for element in elements:
+                                try:
+                                    text = element.text_content().strip()
+                                    print(f"Found text via selector '{selector}': {text}")
+                                    # Check for the expected title content
+                                    if text and "HLR" in text and "Lokasi HP" in text:
+                                        title = text
+                                        print(f"Found matching title: {title}")
+                                        break
+                                    elif text and not "Just a moment" in text:
+                                        # Store as backup if we don't find the perfect match
+                                        if not title:
+                                            title = text
+                                except Exception as text_error:
+                                    print(f"Error getting text content: {str(text_error)}")
+                            if title and "HLR" in title:
+                                break  # Found the perfect match, exit the selector loop
                         except Exception as e:
                             print(f"Failed to get title from {selector}: {str(e)}")
                     
