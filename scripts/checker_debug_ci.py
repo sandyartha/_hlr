@@ -8,6 +8,31 @@ def random_delay(min_seconds=1, max_seconds=3):
     delay = random.uniform(min_seconds, max_seconds)
     print(f"Waiting for {delay:.2f} seconds...")
     time.sleep(delay)
+    
+def wait_for_cloudflare_to_clear(page, max_wait=60):
+    """Wait for Cloudflare challenge to be completed."""
+    print(f"Waiting up to {max_wait} seconds for Cloudflare to clear...")
+    start_time = time.time()
+    
+    while time.time() - start_time < max_wait:
+        try:
+            if "Just a moment" not in page.title():
+                print("Cloudflare challenge appears to be cleared!")
+                return True
+                
+            if page.query_selector('.content-wrapper'):
+                print("Found content wrapper - page seems to be loaded!")
+                return True
+                
+            print("Still waiting for Cloudflare...")
+            time.sleep(5)
+            
+        except Exception as e:
+            print(f"Error while checking Cloudflare status: {str(e)}")
+            time.sleep(2)
+            
+    print("Cloudflare wait timed out")
+    return False
 
 def scrape_hlr():
     print("Starting HLR scraping with Playwright...")
@@ -28,9 +53,25 @@ def scrape_hlr():
                     '--disable-dev-shm-usage',
                     '--disable-accelerated-2d-canvas',
                     '--disable-gpu',
-                    '--window-size=1920,1080'
+                    '--window-size=1920,1080',
+                    '--disable-web-security',
+                    '--disable-features=IsolateOrigins,site-per-process',
+                    '--disable-site-isolation-trials'
                 ]
             )
+            
+            # Inject stealth script
+            js_script = """
+            Object.defineProperty(navigator, 'webdriver', {
+                get: () => false,
+            });
+            Object.defineProperty(navigator, 'languages', {
+                get: () => ['en-US', 'en'],
+            });
+            Object.defineProperty(navigator, 'plugins', {
+                get: () => [1, 2, 3, 4, 5],
+            });
+            """
             
             context = browser.new_context(
                 viewport={'width': 1920, 'height': 1080},
@@ -58,14 +99,25 @@ def scrape_hlr():
             
             try:
                 # Navigate to the page
+                # Add stealth before navigation
+                page.add_init_script(js_script)
+                
                 print("Navigating to page...")
                 page.goto("https://ceebydith.com/cek-hlr-lokasi-hp.html", timeout=60000)
                 
-                # Wait for key elements to load instead of full network idle
-                print("Waiting for page load...")
+                # Wait longer for initial page load
+                print("Waiting for initial page load...")
+                page.wait_for_load_state("domcontentloaded", timeout=60000)
+                
+                # Add additional wait time for Cloudflare
+                print("Waiting for potential Cloudflare challenge...")
+                random_delay(10, 15)  # Longer initial wait
+                
                 try:
-                    # First wait for basic load state
-                    page.wait_for_load_state("domcontentloaded", timeout=30000)
+                    # Check if we're still on Cloudflare
+                    if "Just a moment" in page.title():
+                        print("Still on Cloudflare, waiting longer...")
+                        random_delay(15, 20)  # Even longer wait if still on Cloudflare
                     
                     # Then wait for specific elements that indicate the page is usable
                     page.wait_for_selector('.content-wrapper', timeout=30000)
@@ -74,9 +126,15 @@ def scrape_hlr():
                     print("Warning: Timeout while waiting for some elements, continuing anyway...")
                     
                 # Handle Cloudflare and title extraction with better error handling
-                max_retries = 8  # Increased retries
+                max_retries = 3  # Reduced retries but with longer waits
                 retry_count = 0
                 title = None
+                
+                # Try to wait for Cloudflare to clear first
+                if wait_for_cloudflare_to_clear(page, max_wait=60):
+                    print("Successfully waited for Cloudflare!")
+                else:
+                    print("Warning: Could not confirm Cloudflare clearance")
                 
                 while retry_count < max_retries:
                     try:
