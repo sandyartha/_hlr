@@ -24,11 +24,15 @@ jobs:
           pip install -r requirements.txt
           python -m playwright install --with-deps chromium
 
+      - name: Install Botasaurus
+        run: |
+          python -m pip install --upgrade botasaurus
+
       - name: Run checker
         timeout-minutes: 30
         run: |
           mkdir -p raw_checker
-          python scripts/checker.py
+          python scripts/hlr_checker.py
 
       - name: Commit results
         run: |
