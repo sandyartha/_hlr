@@ -1,19 +1,9 @@
-from botasaurus import bt
-from botasaurus.browser import browser, Driver
+from botasaurus_driver import Driver
 import time
 import random
 import logging
 import os
 
-@browser(
-    block_images_and_css=True,  # Speed up loading
-    wait_for_complete_page_load=True,
-    parallel=1,  # Single instance first for testing
-    reuse_driver=True,
-    cache=True,
-    tiny_profile=True,
-    profile="hlr_checker"
-)
 def save_debug_info(driver, prefix="debug"):
     """Save debug information"""
     print(f"Saving {prefix} information...")
@@ -35,31 +25,20 @@ def save_debug_info(driver, prefix="debug"):
     except Exception as e:
         print(f"Error saving debug info: {str(e)}")
 
-@browser(
-    block_images_and_css=True,  # Speed up loading
-    wait_for_complete_page_load=True,
-    parallel=1,  # Single instance first for testing
-    reuse_driver=True,
-    cache=True,
-    tiny_profile=True,
-    profile="hlr_checker"
-)
-def scrape_hlr(driver: Driver, data):
+def scrape_hlr():
     """Main scraping function with automatic Cloudflare bypass"""
+    print("\nStarting HLR scraping...")
+    driver = None
+    
     try:
-        print("\nStarting HLR scraping with Cloudflare handling...")
+        # Initialize driver
+        driver = Driver()
+        print("Browser initialized")
         
-        # Visit website with custom settings for Cloudflare
-        driver.execute_cdp_cmd('Network.setUserAgentOverride', {
-            "userAgent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36'
-        })
-        
-        # Navigate to the site
-        driver.get("https://ceebydith.com/cek-hlr-lokasi-hp.html")
-        print("Page loaded, handling potential Cloudflare...")
-        
-        # Initial wait for Cloudflare
-        driver.sleep(5)
+        # Visit website with cloudflare bypass
+        print("Navigating to page...")
+        driver.get("https://ceebydith.com/cek-hlr-lokasi-hp.html", bypass_cloudflare=True)
+        print("Page loaded with Cloudflare bypass")
         
         # Wait for key elements with retry
         max_retries = 3
@@ -118,18 +97,15 @@ if __name__ == "__main__":
     )
     
     # Run the scraper
-    print("Starting scraper...")
-    results = bt.run(scrape_hlr)
+    results = scrape_hlr()
     
-    # Check first result
-    result = results[0] if results else None
-    
-    if result and result.get("success"):
+    # Check results
+    if results and results.get("success"):
         print("\nScraping successful!")
-        print(f"Page title: {result.get('title')}")
-        print(f"URL: {result.get('url')}")
+        print(f"Page title: {results.get('title')}")
+        print(f"URL: {results.get('url')}")
     else:
         print("\nScraping failed!")
-        if result and "error" in result:
-            print(f"Error: {result['error']}")
+        if results and "error" in results:
+            print(f"Error: {results['error']}")
         print("See debug folder for detailed information")
