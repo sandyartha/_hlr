@@ -1,1 +1,1 @@
-botasaurus-driver>=0.4.0
+botasaurus==4.0.88
