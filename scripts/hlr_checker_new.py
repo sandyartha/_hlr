@@ -1,31 +1,19 @@
-from botasaurus_driver import Driver
+from botasaurus import bt
+from botasaurus.browser import browser, Driver
 import time
 import random
 import logging
 import os
 
-def setup_driver():
-    """Setup Driver with cloudflare bypass"""
-    return Driver()
-
-def handle_cloudflare(driver, max_wait=60):
-    """Handle Cloudflare detection intelligently"""
-    print("Checking for Cloudflare...")
-    start_time = time.time()
-    
-    while time.time() - start_time < max_wait:
-        if "Just a moment" in driver.title:
-            print("Detected Cloudflare challenge, waiting...")
-            # Use built-in waits
-            driver.smart_sleep(5)
-            continue
-            
-        if driver.exists("section.content-header"):
-            print("Cloudflare challenge passed!")
-            return True
-            
-    return False
-
+@browser(
+    block_images_and_css=True,  # Speed up loading
+    wait_for_complete_page_load=True,
+    parallel=1,  # Single instance first for testing
+    reuse_driver=True,
+    cache=True,
+    tiny_profile=True,
+    profile="hlr_checker"
+)
 def save_debug_info(driver, prefix="debug"):
     """Save debug information"""
     print(f"Saving {prefix} information...")
@@ -33,44 +21,47 @@ def save_debug_info(driver, prefix="debug"):
         os.makedirs("debug", exist_ok=True)
         
         # Take screenshot
-        screenshot_path = f"debug/{prefix}_screenshot.png"
-        driver.screenshot(screenshot_path)
-        print(f"Screenshot saved to {screenshot_path}")
+        driver.screenshot(f"debug/{prefix}_screenshot.png")
         
         # Save page source
-        html_path = f"debug/{prefix}.html"
-        with open(html_path, "w", encoding="utf-8") as f:
+        with open(f"debug/{prefix}.html", "w", encoding="utf-8") as f:
             f.write(driver.page_source)
-        print(f"Page source saved to {html_path}")
         
-        # Save basic debug info
-        debug_info = {
-            "url": driver.current_url,
-            "title": driver.title
-        }
-        
+        # Save basic info
         with open(f"debug/{prefix}_info.txt", "w", encoding="utf-8") as f:
-            for key, value in debug_info.items():
-                f.write(f"{key}:\n{value}\n\n")
-        
+            f.write(f"URL: {driver.current_url}\n")
+            f.write(f"Title: {driver.title}\n")
+            
     except Exception as e:
         print(f"Error saving debug info: {str(e)}")
 
-def scrape_hlr():
-    print("\nStarting HLR scraping with Botasaurus Driver...")
-    driver = None
-    
+@browser(
+    block_images_and_css=True,  # Speed up loading
+    wait_for_complete_page_load=True,
+    parallel=1,  # Single instance first for testing
+    reuse_driver=True,
+    cache=True,
+    tiny_profile=True,
+    profile="hlr_checker"
+)
+def scrape_hlr(driver: Driver, data):
+    """Main scraping function with automatic Cloudflare bypass"""
     try:
-        # Initialize driver
-        driver = setup_driver()
-        print("Browser initialized")
+        print("\nStarting HLR scraping with Cloudflare handling...")
         
-        # Visit the website with cloudflare bypass
-        print("Navigating to page...")
-        driver.get("https://ceebydith.com/cek-hlr-lokasi-hp.html", bypass_cloudflare=True)
-        print("Page loaded")
-            
-        # Wait for key elements with enhanced retry mechanism
+        # Visit website with custom settings for Cloudflare
+        driver.execute_cdp_cmd('Network.setUserAgentOverride', {
+            "userAgent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36'
+        })
+        
+        # Navigate to the site
+        driver.get("https://ceebydith.com/cek-hlr-lokasi-hp.html")
+        print("Page loaded, handling potential Cloudflare...")
+        
+        # Initial wait for Cloudflare
+        driver.sleep(5)
+        
+        # Wait for key elements with retry
         max_retries = 3
         title = None
         
@@ -78,60 +69,46 @@ def scrape_hlr():
             try:
                 print(f"Attempt {attempt + 1}/{max_retries} to find content...")
                 
-                # Wait for content with auto-retry
-                header = driver.wait_for_selector("section.content-header h1", timeout=20)
+                # Try multiple selectors
+                for selector in ["section.content-header h1", ".content-header h1", "h1"]:
+                    if driver.exists(selector):
+                        title = driver.get_text(selector)
+                        break
                 
-                # Basic scroll
-                driver.execute_script("window.scrollTo(0, document.body.scrollHeight/2)")
-                time.sleep(2)
-                
-                # Get title with validation
-                title = header.text
                 if title and "HLR" in title:
                     print(f"Successfully found title: {title}")
                     break
                     
                 print("Title not found yet, retrying...")
-                time.sleep(3)
+                driver.sleep(3)
                 
             except Exception as e:
                 print(f"Attempt {attempt + 1} failed: {str(e)}")
                 if attempt < max_retries - 1:
                     driver.refresh()
-                    time.sleep(3)
+                    driver.sleep(3)
                     continue
                 raise
-        
-        # Save comprehensive debug info
+                
+        # Save debug info
         save_debug_info(driver)
         
         return {
             "title": title,
             "url": driver.current_url,
-            "success": True,
-            "cookies": driver.get_cookies()
+            "success": True
         }
         
     except Exception as e:
         print(f"\nError during scraping: {str(e)}")
         
-        # Save comprehensive error debug info
-        if driver:
-            save_debug_info(driver, "error")
-            
+        # Save error debug info
+        save_debug_info(driver, "error")
+        
         return {
             "error": str(e),
             "success": False
         }
-    
-    finally:
-        if driver:
-            try:
-                print("Closing browser...")
-                driver.close()
-                print("Browser closed successfully")
-            except Exception as close_error:
-                print(f"Error closing browser: {str(close_error)}")
 
 if __name__ == "__main__":
     # Configure logging
@@ -141,16 +118,18 @@ if __name__ == "__main__":
     )
     
     # Run the scraper
-    results = scrape_hlr()
+    print("Starting scraper...")
+    results = bt.run(scrape_hlr)
     
-    # Check results
-    if results.get("success"):
+    # Check first result
+    result = results[0] if results else None
+    
+    if result and result.get("success"):
         print("\nScraping successful!")
-        print(f"Page title: {results.get('title')}")
-        print(f"URL: {results.get('url')}")
-        print(f"Cookies captured: {len(results.get('cookies', []))}")
+        print(f"Page title: {result.get('title')}")
+        print(f"URL: {result.get('url')}")
     else:
         print("\nScraping failed!")
-        if "error" in results:
-            print(f"Error: {results['error']}")
+        if result and "error" in result:
+            print(f"Error: {result['error']}")
         print("See debug folder for detailed information")
