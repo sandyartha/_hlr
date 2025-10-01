@@ -1,4 +1,9 @@
-from botasaurus import bt
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 import time
 import random
 import logging
@@ -9,13 +14,23 @@ def random_delay(min_seconds=1, max_seconds=3):
     print(f"Waiting for {delay:.2f} seconds...")
     time.sleep(delay)
 
-@bt.browser(
-    block_images=False,  # We need images for better stealth
-    headless=True,
-    lang="en-US,en;q=0.9",
-    window_size=(1920, 1080)
-)
-def scrape_hlr_task(driver: bt.Driver, data):
+def setup_driver():
+    chrome_options = Options()
+    chrome_options.add_argument('--headless')
+    chrome_options.add_argument('--no-sandbox')
+    chrome_options.add_argument('--disable-dev-shm-usage')
+    chrome_options.add_argument('--disable-gpu')
+    chrome_options.add_argument('--window-size=1920,1080')
+    chrome_options.add_argument('--disable-blink-features=AutomationControlled')
+    
+    # Add stealth headers
+    chrome_options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36')
+    chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    chrome_options.add_experimental_option('useAutomationExtension', False)
+    
+    return webdriver.Chrome(options=chrome_options)
+
+def scrape_hlr():
     print("Starting HLR scraping with Botasaurus...")
     
     try:
@@ -89,7 +104,7 @@ if __name__ == "__main__":
     )
     
     # Run the scraper
-    results = scrape_hlr_task()
+    results = scrape_hlr()
     
     # Check results
     if results.get("success"):
