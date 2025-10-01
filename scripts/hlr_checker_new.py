@@ -18,6 +18,9 @@ def random_delay(min_seconds=1, max_seconds=3):
 def setup_driver():
     print("Setting up Chrome driver...")
     try:
+        import chromedriver_autoinstaller
+        chromedriver_autoinstaller.install()
+        
         chrome_options = Options()
         chrome_options.add_argument('--headless')
         chrome_options.add_argument('--no-sandbox')
@@ -29,12 +32,7 @@ def setup_driver():
         chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
         chrome_options.add_experimental_option('useAutomationExtension', False)
         
-        if sys.platform.startswith('win'):
-            driver = webdriver.Chrome(options=chrome_options)
-        else:
-            # For Linux, specify the ChromeDriver path
-            driver = webdriver.Chrome('/usr/bin/chromedriver', options=chrome_options)
-            
+        driver = webdriver.Chrome(options=chrome_options)
         print("Chrome driver setup successful")
         return driver
         
