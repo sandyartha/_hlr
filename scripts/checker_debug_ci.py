@@ -134,7 +134,49 @@ def scrape_hlr():
                         
                     retry_count += 1
                 
-                # Save debugging info
+                # Take screenshot first to ensure page is rendered
+                print("Taking screenshot...")
+                page.screenshot(path="debug_screenshot.png")
+                
+                print("Waiting after screenshot...")
+                random_delay(3, 5)  # Give extra time for any dynamic content
+                
+                # Try to get title again after ensuring page is rendered
+                try:
+                    print("Attempting to get title after screenshot...")
+                    # Try multiple selectors to find the title
+                    title_selectors = [
+                        'h1',  # Direct h1
+                        '.content-header h1',  # Content header h1
+                        'title',  # Page title
+                        '.content-wrapper h1', # Content wrapper h1
+                    ]
+                    
+                    for selector in title_selectors:
+                        try:
+                            element = page.query_selector(selector)
+                            if element:
+                                title = element.text_content()
+                                print(f"Found title via selector '{selector}': {title}")
+                                if title and not "Just a moment" in title:
+                                    break
+                        except Exception as e:
+                            print(f"Failed to get title from {selector}: {str(e)}")
+                    
+                    if not title or "Just a moment" in title:
+                        # Final attempt - try to get any visible text from the content area
+                        content_text = page.evaluate('''() => {
+                            const content = document.querySelector('.content-wrapper');
+                            return content ? content.innerText.split('\\n')[0] : null;
+                        }''')
+                        if content_text:
+                            title = content_text
+                            print(f"Got title from content: {title}")
+                            
+                except Exception as e:
+                    print(f"Error getting title after screenshot: {str(e)}")
+                
+                # Save debug info
                 content = page.content()
                 print(f"Page content length: {len(content)} bytes")
                 print("Saving debug info...")
@@ -142,12 +184,14 @@ def scrape_hlr():
                 with open("debug.html", "w", encoding="utf-8") as f:
                     f.write(content)
                 
-                page.screenshot(path="debug_screenshot.png")
+                success = title and "Just a moment" not in title
+                print(f"Final title: {title}")
+                print(f"Success: {success}")
                 
                 return {
                     "title": title,
                     "url": page.url,
-                    "success": "Just a moment" not in title
+                    "success": success
                 }
                 
             finally:
