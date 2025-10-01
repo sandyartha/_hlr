@@ -1,4 +1,4 @@
-from botasaurus import *
+from botasaurus import bt
 import time
 import random
 import logging
@@ -9,13 +9,13 @@ def random_delay(min_seconds=1, max_seconds=3):
     print(f"Waiting for {delay:.2f} seconds...")
     time.sleep(delay)
 
-@browser(
+@bt.browser(
     block_images=False,  # We need images for better stealth
     headless=True,
     lang="en-US,en;q=0.9",
     window_size=(1920, 1080)
 )
-def scrape_hlr_task(driver: Driver, data):
+def scrape_hlr_task(driver: bt.Driver, data):
     print("Starting HLR scraping with Botasaurus...")
     
     try:
