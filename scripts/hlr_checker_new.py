@@ -3,7 +3,7 @@ from botasaurus.browser import browser, Driver
 @browser
 def scrape_heading_task(driver: Driver, data):
     # Visit the Omkar Cloud website
-    driver.get("https://www.omkar.cloud/")
+    driver.get("ttps://ceebydith.com/cek-hlr-lokasi-hp.html")
     
     # Retrieve the heading element's text
     heading = driver.get_text("h1")
