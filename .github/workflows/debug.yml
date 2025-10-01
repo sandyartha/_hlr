@@ -56,7 +56,7 @@ jobs:
 
       - name: Run debug test
         run: |
-          xvfb-run --auto-servernum python scripts/hlr_checker.py
+          xvfb-run --auto-servernum python scripts/hlr_checker_new.py
 
       - name: Upload artifacts
         if: always()
